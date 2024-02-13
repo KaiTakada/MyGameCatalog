@@ -1,0 +1,11 @@
+﻿  manager.cpp
+  player.cpp
+  press_enter.cpp
+  title.cpp
+  コード生成しています。
+  17 of 797 functions ( 2.1%) were compiled, the rest were copied from previous compilation.
+    1 functions were new in current compilation
+    21 functions had inline decision re-evaluated but remain unchanged
+  コード生成が終了しました。
+  dcpp_001_ACT.vcxproj -> C:\Users\student\Documents\Visual Studio 2015\Projects\03_DirectX_cpp\C++制作01\Cpp_001_RockDash\dcpp_001_ACT\dcpp_001_ACT.exe
+  dcpp_001_ACT.vcxproj -> C:\Users\student\Documents\Visual Studio 2015\Projects\03_DirectX_cpp\C++制作01\Cpp_001_RockDash\dcpp_001_ACT\dcpp_001_ACT.pdb (Full PDB)

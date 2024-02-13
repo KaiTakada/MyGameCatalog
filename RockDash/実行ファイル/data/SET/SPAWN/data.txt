@@ -1,0 +1,29 @@
+##==========================================================
+##
+## スポーン頻度とそのランダム性。
+## 同時生成数とその最低保証。
+##
+##==========================================================
+ #0
+ SET_SPAWN
+ 	FQC = 50
+ 	FQC_RAND = 10
+ 	GROUP_MIN = 1
+ 	GROUP_MAX = 2
+ END_SPAWN
+
+ #1
+ SET_SPAWN
+ 	FQC = 300
+ 	FQC_RAND = 100
+ 	GROUP_MIN = 1
+ 	GROUP_MAX = 20
+ END_SPAWN
+
+ #3
+ SET_SPAWN
+ 	FQC = 600
+ 	FQC_RAND = 100
+ 	GROUP_MIN = 2
+ 	GROUP_MAX = 7
+ END_SPAWN

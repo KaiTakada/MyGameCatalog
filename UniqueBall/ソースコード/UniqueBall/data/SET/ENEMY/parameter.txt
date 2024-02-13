@@ -1,0 +1,33 @@
+##==========================================================
+##
+## スポーン頻度とそのランダム性。
+## 同時生成数とその最低保証。
+##
+##==========================================================
+ #NONE
+ SET_PARAM
+ 	LIFE = 2.0
+ 	SPEED = 1.0
+ 	ATTACK = 1.0
+ END_PARAM
+
+ #SPEED
+ SET_PARAM
+ 	LIFE = 1.0
+ 	SPEED = 10.0
+ 	ATTACK = 1.0
+ END_PARAM
+
+ #HP
+ SET_PARAM
+ 	LIFE = 7.0
+ 	SPEED = 0.7
+ 	ATTACK = 1.0
+ END_PARAM
+
+ #BOSS
+ SET_PARAM
+ 	LIFE = 1000.0
+ 	SPEED = 1.5
+ 	ATTACK = 1.0
+ END_PARAM

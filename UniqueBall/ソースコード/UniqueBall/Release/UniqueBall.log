@@ -1,0 +1,64 @@
+﻿  Anim.cpp
+  Field.cpp
+  Parts.cpp
+  Xmodel.cpp
+  ball_ganarator.cpp
+  bg.cpp
+  bg3D.cpp
+  blk_goal.cpp
+  block.cpp
+  bullet.cpp
+  camera.cpp
+  camera_game.cpp
+  cursor.cpp
+  debugproc.cpp
+  ef_smoke.cpp
+  effect.cpp
+  enemy.cpp
+  explosion.cpp
+  fade.cpp
+  game.cpp
+  コンパイル中...
+  gauge.cpp
+  identity.cpp
+  input.cpp
+  item.cpp
+  light.cpp
+  main.cpp
+  manager.cpp
+  map.cpp
+  motion.cpp
+  multibg.cpp
+  number.cpp
+  object.cpp
+  object2D.cpp
+  object3D.cpp
+  objectBillboard.cpp
+  objectX.cpp
+  particle.cpp
+  pause.cpp
+  player.cpp
+  precompile.cpp
+  コンパイル中...
+  press_enter.cpp
+  ranking.cpp
+  renderer.cpp
+  result.cpp
+  score.cpp
+  sound.cpp
+  state_life.cpp
+  texture.cpp
+  timer.cpp
+  title.cpp
+  tutorial.cpp
+  useful.cpp
+  wall.cpp
+  weapon.cpp
+  wp_ball.cpp
+  コード生成しています。
+  23 of 903 functions ( 2.5%) were compiled, the rest were copied from previous compilation.
+    9 functions were new in current compilation
+    21 functions had inline decision re-evaluated but remain unchanged
+  コード生成が終了しました。
+  UniqueBall.vcxproj -> C:\Users\student\Documents\Visual Studio 2015\Projects\03_DirectX_cpp\C++制作03_就職作品\UniqueBall\UniqueBall\UniqueBall.exe
+  UniqueBall.vcxproj -> C:\Users\student\Documents\Visual Studio 2015\Projects\03_DirectX_cpp\C++制作03_就職作品\UniqueBall\UniqueBall\UniqueBall.pdb (Full PDB)

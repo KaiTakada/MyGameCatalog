@@ -1,0 +1,148 @@
+//===============================================
+//
+// 数字(number.cpp)
+// Author 髙田 佳依
+//
+//===============================================
+
+//============================
+// インクルードファイル
+//============================
+#include "number.h"
+#include "object.h"
+#include "texture.h"
+
+//============================
+// マクロ定義
+//============================
+#define NUM_SPEED (20.0f)	//移動量
+#define NUM_SIZE D3DXVECTOR2(125.0f,200.0f)				//デフォルトサイズ
+
+//============================
+// 静的メンバ変数宣言
+//============================
+LPDIRECT3DTEXTURE9 CNumber::m_pTexture = nullptr;				//共通テクスチャバッファ
+int CNumber::m_nNumAll = 0;		//総数
+
+//============================================
+//==================== 弾 ====================
+//============================
+// コンストラクタ
+//============================
+CNumber::CNumber()
+{
+	m_nValue = 0;
+	m_nNumAll++;
+}
+
+//============================
+// デストラクタ
+//============================
+CNumber::~CNumber()
+{
+	m_nNumAll--;
+}
+
+//====================================
+// 数字の初期化(デフォ)
+//====================================
+HRESULT CNumber::Init(void)
+{
+	//初期化
+	CObject2D::Init();
+
+	SetType(TYPE_NUMBER);
+
+	return S_OK;
+}
+
+//====================================
+// 数字の初期化(位置オバロ)
+//====================================
+HRESULT CNumber::Init(const D3DXVECTOR3 pos, const D3DXVECTOR3 rot)
+{
+	//初期化
+	if(FAILED(CObject2D::Init(pos, rot)))
+	{
+		return E_FAIL;
+	}
+
+	//タイプ設定
+	SetType(TYPE_NUMBER);
+
+	//サイズ設定
+	SetSize(D3DXVECTOR3(NUM_SIZE.x, NUM_SIZE.y, 0.0f));
+
+	return S_OK;
+}
+
+//============================
+// 数字の終了
+//============================
+void CNumber::Uninit(void)
+{
+	//終了
+	CObject2D::Uninit();
+}
+
+//============================
+// 数字の更新
+//============================
+void CNumber::Update(void)
+{
+
+}
+
+//============================
+// 数字の描画
+//============================
+void CNumber::Draw(void)
+{
+	//描画
+	CObject2D::Draw();
+}
+
+//============================
+// 生成
+//============================
+CNumber *CNumber::Create(const D3DXVECTOR3 pos, const D3DXVECTOR3 rot, const D3DXVECTOR3 size, int nValue)
+{
+	CNumber *pNumber = nullptr;
+
+	//オブジェクト生成&初期化
+	pNumber = new CNumber;
+
+	if (pNumber != nullptr)
+	{
+		if (FAILED(pNumber->Init(pos, rot)))
+		{
+			return nullptr;
+		}
+		else
+		{
+			pNumber->SetSize(size);		//サイズ設定
+
+			CTexture *pTexture = CManager::GetTexture();
+			pNumber->SetIdxTexture(pTexture->Regist("data\\TEXTURE\\number000.png"));
+
+			pNumber->SetNumber(nValue);		//数値割り当て
+		}
+	}
+	else
+	{
+		return nullptr;
+	}
+
+	return pNumber;
+}
+
+//============================
+// 任意の数値を描画位置設定
+//============================
+void CNumber::SetNumber(int nNumber)
+{
+	D3DXVECTOR2 rightDown = { 0.1f * nNumber + 0.1f,1.0f };
+	D3DXVECTOR2 leftUp = { 0.1f * nNumber, 0.0f };
+	
+	SetTexPos(rightDown, leftUp);
+}
