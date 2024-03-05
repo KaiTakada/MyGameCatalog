@@ -142,10 +142,12 @@ void CPause::Update(void)
 {
 	//キーボード取得
 	CInputKeyboard *pInputKeyboard = CManager::GetInstance()->GetInputKeyboard();
+	CInputGamepad *pInputGamepad = CManager::GetInstance()->GetInputGamepad();
 	CFade *pFade = CScene::GetFade();
 	int nNum[2] = {};
 
-	if (pInputKeyboard->GetTrigger(DIK_W))
+	if (pInputKeyboard->GetTrigger(DIK_W) ||
+		pInputGamepad->GetTriggerOR(CInputGamepad::BUTTON_UP))
 	{
 		nNum[0] = m_nPauseSelect;
 
@@ -158,7 +160,8 @@ void CPause::Update(void)
 	
 		nNum[1] = m_nPauseSelect;
 	}
-	else if (pInputKeyboard->GetTrigger(DIK_S))
+	else if (pInputKeyboard->GetTrigger(DIK_S) ||
+		pInputGamepad->GetTriggerOR(CInputGamepad::BUTTON_DOWN))
 	{
 		nNum[0] = m_nPauseSelect;
 
@@ -175,16 +178,15 @@ void CPause::Update(void)
 		m_pItem[nNum[1]]->SetTexCol(D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f));
 	}
 
-	if (pInputKeyboard->GetTrigger(DIK_RETURN) && m_bEnter == false)
+	if (pInputKeyboard->GetTrigger(DIK_RETURN) ||
+		pInputGamepad->GetTriggerOR(CInputGamepad::BUTTON_A)
+		&& m_bEnter == false)
 	{
 		m_bEnter = true;
 
 		switch (m_nPauseSelect)
 		{
 			case PAUSE_MENU_CONTINUE:
-				CManager::GetInstance()->SetPause(false);
-				CGame::NullPause();
-				Uninit();
 				break;
 
 			case PAUSE_MENU_RETRY:
@@ -196,9 +198,12 @@ void CPause::Update(void)
 				break;
 
 			default:
-
 			break;
 		}
+
+		CManager::GetInstance()->SetPause(false);
+		CGame::NullPause();
+		Uninit();
 	}
 }
 

@@ -61,6 +61,7 @@ public:
 		TYPE_BALL,
 		TYPE_BALL_GENERATOR,
 		TYPE_WALL,
+		TYPE_UI,
 		TYPE_MAX
 	}TYPE;
 

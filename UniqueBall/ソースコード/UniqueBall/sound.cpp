@@ -43,6 +43,11 @@ SOUNDINFO g_aSoundInfo[CSound::SOUND_LABEL_MAX] =
 	{ "data/BGM/ranking.wav", -1 },							// BGM4
 	{ "data/SE/ButtonSE.wav", 0 },							// SE1
 	{ "data/SE/onfire.wav", 0 },							// SE2
+	{ "data/SE/door.wav", 0 },							// SE3
+	{ "data/SE/throw.wav", 0 },							// SE4
+	{ "data/SE/catch.wav", 0 },							// SE5
+	{ "data/SE/catch_just.wav", 0 },							// SE6
+	{ "data/SE/tackle.wav", 0 },							// SE7
 };
 
 //=============================================================================

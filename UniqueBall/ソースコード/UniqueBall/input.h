@@ -8,13 +8,7 @@
 #define _INPUT_H_
 
 #include "main.h"
-#include <Xinput.h>
-#define DIRECTINPUT_VERSION (0x0800)			//ビルド時の警告対処マクロ用
-#include <dinput.h>
 
-//ライブラリのリンク
-#pragma comment(lib,"xinput.lib")				//Gamepad入力処理に必要
-#pragma comment(lib,"dinput8.lib")				//入力処理に必要
 
 //マクロ定義
 #define NUM_KEY_MAX (256)		//キーの最大数
@@ -106,8 +100,13 @@ public:
 
 	//ボタン状態取得
 	bool CInputGamepad::GetPress(PADBUTTON button, int nPlayer) { return (m_aButtonState[nPlayer].Gamepad.wButtons & (0x01 << button)) ? true : false; }
-	bool CInputGamepad::GetPadTrigger(PADBUTTON button, int nPlayer) { return (m_aButtonStateTrigger[nPlayer].Gamepad.wButtons & (0x01 << button)) ? true : false; }
-	bool CInputGamepad::GetPadRelease(PADBUTTON button, int nPlayer) { return (m_aButtonStateRelease[nPlayer].Gamepad.wButtons & (0x01 << button)) ? true : false; }
+	bool CInputGamepad::GetTrigger(PADBUTTON button, int nPlayer) { return (m_aButtonStateTrigger[nPlayer].Gamepad.wButtons & (0x01 << button)) ? true : false; }
+	bool CInputGamepad::GetRelease(PADBUTTON button, int nPlayer) { return (m_aButtonStateRelease[nPlayer].Gamepad.wButtons & (0x01 << button)) ? true : false; }
+
+	bool CInputGamepad::GetPressOR(PADBUTTON button);
+	bool CInputGamepad::GetTriggerOR(PADBUTTON button);
+	bool CInputGamepad::GetReleaseOR(PADBUTTON button);
+
 
 	//R/Lトリガー(取れる)
 	BYTE CInputGamepad::GetPressByteRT(int nPlayer) { return m_aButtonState[nPlayer].Gamepad.bRightTrigger; }	//int型は何番のコントローラーかを指す
@@ -124,7 +123,8 @@ public:
 	SHORT GetGameStickLYTrigger(int nPlayer) { return m_aButtonStateTrigger[nPlayer].Gamepad.sThumbLY; }
 	SHORT GetGameStickLXRelease(int nPlayer) { return m_aButtonStateRelease[nPlayer].Gamepad.sThumbLX; }
 	SHORT GetGameStickLYRelease(int nPlayer) { return m_aButtonStateRelease[nPlayer].Gamepad.sThumbLY; }
-	
+	float GetStickLRot(int nPlayer) { return atan2f(float(m_aButtonState[nPlayer].Gamepad.sThumbLX), float(m_aButtonState[nPlayer].Gamepad.sThumbLY)); }
+
 	//右スティック
 	SHORT GetGameStickRXPress(int nPlayer) { return m_aButtonState[nPlayer].Gamepad.sThumbRX; }
 	SHORT GetGameStickRYPress(int nPlayer) { return m_aButtonState[nPlayer].Gamepad.sThumbRY; }
@@ -132,6 +132,7 @@ public:
 	SHORT GetGameStickRYTrigger(int nPlayer) { return m_aButtonStateTrigger[nPlayer].Gamepad.sThumbRY; }
 	SHORT GetGameStickRXRelease(int nPlayer) { return m_aButtonStateRelease[nPlayer].Gamepad.sThumbRX; }
 	SHORT GetGameStickRYRelease(int nPlayer) { return m_aButtonStateRelease[nPlayer].Gamepad.sThumbRY; }
+	float GetStickRRot(int nPlayer) { return atan2f(float(m_aButtonState[nPlayer].Gamepad.sThumbRX), float(m_aButtonState[nPlayer].Gamepad.sThumbRY)); }
 
 protected:
 	XINPUT_STATE m_aButtonState[NUM_PAD_MAX];			//PADのプレス情報

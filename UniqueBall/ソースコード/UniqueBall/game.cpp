@@ -19,10 +19,11 @@
 #include "fade.h"
 #include "timer.h"
 #include "map.h"
-#include "bg3D.h"
 #include "ball_ganarator.h"
 #include "camera_game.h"
 #include "wall.h"
+#include "bg3D.h"
+#include "texture.h"
 
 #include "block.h"
 #include "blk_goal.h"
@@ -81,48 +82,57 @@ HRESULT CGame::Init()
 {
 	CScene::Init();
 
-	//オブジェクトの生成
-	for (int i = 0; i < mygame::NUMPLAYER; i++)
-	{//CSceneのプレイヤーを作る
-	
-		CPlayer *pPlayer = CPlayer::Create(D3DXVECTOR3(0.0f, 100.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
-		
-		if (pPlayer != nullptr)
-		{
-			pPlayer->SetIdx(i);
-			pPlayer->SetMember(static_cast<my_Identity::eMember>(i + 1));
-			CScene::SetPlayer(pPlayer, i);
-		}
-	}
+	int nNumPlayer = GetNumPlayer();
+	nNumPlayer = mygame::NUMPLAYER;		//とりま2人
+	SetNumPlayer(nNumPlayer);
 
-	for (int i = 0; i < mygame::NUMPLAYER; i++)
+	//プレイヤー
+	D3DXVECTOR3 aPosPlayer[mylib_const::MAX_PLAYER] =
+	{
+		D3DXVECTOR3(2000.0f, 0.0f, -2000.0f),
+		D3DXVECTOR3(-2000.0f, 0.0f, 2000.0f),
+		D3DXVECTOR3(2000.0f, 0.0f, 2000.0f),
+		D3DXVECTOR3(-2000.0f, 0.0f, -2000.0f),
+	};
+
+	for (int i = 0; i < nNumPlayer; i++)
 	{
 		m_ppCamera[i] = new CCameraGame;
 
 		if (m_ppCamera[i] != nullptr)
 		{
+			D3DXVECTOR3 rot = mylib_const::DEFVEC3;
+			rot.y = mylib_useful::Point2Angle(mylib_const::DEFVEC3, aPosPlayer[i]);
+
 			m_ppCamera[i]->Init();
 			m_ppCamera[i]->SetIdx(i);
 			m_ppCamera[i]->SetViewPos();
+			m_ppCamera[i]->SetRot(rot);
 		}
 	}
 
+	//オブジェクトの生成
+	for (int i = 0; i < nNumPlayer; i++)
+	{//CSceneのプレイヤーを作る
+		D3DXVECTOR3 rot = mylib_const::DEFVEC3;
+		rot.y = mylib_useful::Point2Angle(mylib_const::DEFVEC3, aPosPlayer[i]);
+		CPlayer *pPlayer = CPlayer::Create(aPosPlayer[i], rot);
+		
+		if (pPlayer != nullptr)
+		{
+			//pPlayer->SetRot(rot);
+			pPlayer->SetIdx(i);
+			pPlayer->SetMember(static_cast<my_Identity::eMember>(i + 1));
+			pPlayer->InitUI();
+			pPlayer->InitModel();
+			CScene::SetPlayer(pPlayer, i);
+		}
+	}
+
+	//床
 	m_pField = CField::Create(D3DXVECTOR3(0.0f, 0.0f, 0.0f));
 	
-	//float fRot = 0.0f;
-	//for (int i = 0; i < mygame::NUM_WALL; i++)
-	//{
-	//	m_ppWall[i] = CWall::Create(mylib_const::DEFVEC3);
-	//	D3DXVECTOR3 rot = m_ppWall[0]->GetRot();
-	//	m_ppWall[0]->SetRot(D3DXVECTOR3(rot.x, fRot, rot.z));
-	//	//m_ppWall[i]->SetSize(D3DXVECTOR3(mylib_const::DEF_FIELD_SIZE.x, mylib_const::DEF_FIELD_SIZE.z * 0.5f, 0.0f));
-	//	fRot += 0.25f * D3DX_PI;
-	//}
-
-	//m_ppWall[0]->SetPos(D3DXVECTOR3(mylib_const::DEF_FIELD_SIZE.x, 0.0f, 0.0f));
-	//m_ppWall[1]->SetPos(D3DXVECTOR3(-mylib_const::DEF_FIELD_SIZE.x, 0.0f, 0.0f));
-	//m_ppWall[2]->SetPos(D3DXVECTOR3(0.0f, 0.0f, mylib_const::DEF_FIELD_SIZE.z));
-	//m_ppWall[3]->SetPos(D3DXVECTOR3(0.0f, 0.0f, -mylib_const::DEF_FIELD_SIZE.z));
+	//壁
 	D3DXVECTOR3 aPos[mygame::NUM_WALL] =
 	{
 		D3DXVECTOR3(0.0f, 0.0f, -mylib_const::DEF_FIELD_SIZE.z),
@@ -136,7 +146,9 @@ HRESULT CGame::Init()
 	for (int i = 0; i < mygame::NUM_WALL; i++)
 	{
 		fRotBG -= i * 0.5f * D3DX_PI;
-		CBg3D::Create(aPos[i], D3DXVECTOR3(0.0f, fRotBG, 0.0f));
+		CBg3D *pBG = CBg3D::Create(aPos[i], D3DXVECTOR3(0.0f, fRotBG, 0.0f));
+		CTexture *pTex = CManager::GetInstance()->GetTexture();
+		pBG->SetIdxTexture(pTex->Regist("data\\TEXTURE\\BG\\field.jpg"));
 	}
 
 	//if (m_pTimer != nullptr)
@@ -153,21 +165,23 @@ HRESULT CGame::Init()
 		m_pBot->Uninit();
 		m_pBot = nullptr;
 	}
-
-	m_pBot = CEnemy::Create(D3DXVECTOR3(500.0f, 0.0f, 0.0f), mylib_const::DEFVEC3);
+	
+	m_pBot = CEnemy::Create(D3DXVECTOR3(mylib_const::DEF_FIELD_SIZE.x - 100.0f, 0.0f, mylib_const::DEF_FIELD_SIZE.z - 100.0f), mylib_const::DEFVEC3);
 
 	CManager::GetInstance()->GetSound()->PlaySound(CSound::SOUND_LABEL_BGM_GAME);
 
 	//マップ生成
-	m_pMap = CMap::Create(D3DXVECTOR3(SCREEN_WIDTH * 0.5f, SCREEN_HEIGHT * 0.5f, 0.0f));
-	m_pMap->Load("data\\SET\\MAP\\load.txt");
-	m_pMap->Uninit();
-	delete m_pMap;
+	//m_pMap = CMap::Create(D3DXVECTOR3(SCREEN_WIDTH * 0.5f, SCREEN_HEIGHT * 0.5f, 0.0f));
+	//m_pMap->Load("data\\SET\\MAP\\load.txt");
+	//m_pMap->Uninit();
+	//delete m_pMap;
 	m_pMap = nullptr;
 
+	CBallGenerator::Create(D3DXVECTOR3(0.0f, 0.0f, 0.0f));
+	CBallGenerator::Create(D3DXVECTOR3(1500.0f, 0.0f, 0.0f));
 	CBallGenerator::Create(D3DXVECTOR3(-1500.0f, 0.0f, 0.0f));
-	CBallGenerator::Create(D3DXVECTOR3(-500.0f, 0.0f, 0.0f));
-	CBallGenerator::Create(D3DXVECTOR3(1000.0f, 0.0f, 0.0f));
+	CBallGenerator::Create(D3DXVECTOR3(0.0f, 0.0f, 1500.0f));
+	CBallGenerator::Create(D3DXVECTOR3(0.0f, 0.0f, -1500.0f));
 
 	return S_OK;
 }
@@ -193,26 +207,26 @@ void CGame::Uninit()
 	{
 		if (m_ppWall[i] != nullptr)
 		{
-			m_ppWall[i]->Uninit();
+			m_ppWall[i]->SetDeath(true);
 			m_ppWall[i] = nullptr;
 		}
 	}
 
 	if (m_pField != nullptr)
 	{
-		m_pField->Uninit();
+		m_pField->SetDeath(true);
 		m_pField = nullptr;
 	}
 
 	if (m_pPause != nullptr)
 	{
-		m_pPause->Uninit();
+		m_pPause->SetDeath(true);
 		m_pPause = nullptr;
 	}
 
 	if (m_pTimer != nullptr)
 	{
-		m_pTimer->Uninit();
+		m_pTimer->SetDeath(true);
 		m_pTimer = nullptr;
 	}
 
@@ -236,6 +250,7 @@ void CGame::Uninit()
 		{
 			m_ppCamera[i]->Uninit();
 			delete m_ppCamera[i];
+			m_ppCamera[i] = nullptr;
 		}
 	}
 
@@ -249,6 +264,18 @@ void CGame::Uninit()
 //============================
 void CGame::Update()
 {
+	CScene::Update();
+
+	if (CManager::GetInstance()->GetScene()->GetMode() != CScene::MODE_GAME)
+	{
+		return;
+	}
+	else if (CManager::GetInstance()->GetScene() != this)
+	{
+		return;
+	}
+
+
 	//キーボード取得
 	CInputKeyboard *pInputKeyboard = CManager::GetInstance()->GetInputKeyboard();
 	CInputGamepad *pInputPad = CManager::GetInstance()->GetInputGamepad();
@@ -262,8 +289,6 @@ void CGame::Update()
 			m_ppCamera[i]->Update();
 		}
 	}
-
-	CScene::Update();
 
 #if _DEBUG
 	//エディット
@@ -293,7 +318,7 @@ void CGame::Update()
 #endif
 
 	//ポーズ
-	if (pInputKeyboard->GetTrigger(DIK_P) || pInputPad->GetPress(CInputGamepad::BUTTON_START, 0) == true)
+	if (pInputKeyboard->GetTrigger(DIK_P) || pInputPad->GetTriggerOR(CInputGamepad::BUTTON_START) == true)
 	{//[ P ]キーでポーズ
 
 		if (m_pPause == nullptr)
@@ -339,6 +364,8 @@ void CGame::Update()
 			m_pTimer->SetStop(true);
 			SetNowTime(m_pTimer->GetValue());
 		}
+
+		return;
 	}
 
 	if (m_pTimer != nullptr)
@@ -348,28 +375,26 @@ void CGame::Update()
 		m_pTimer->CntValue(1);
 	}
 
-	//死んでたらリスポーン
-	for (int i = 0; i < mygame::NUMPLAYER; i++)
-	{//CSceneのプレイヤーを殺す
+	int nNumPlayer = 0;
+	for (int i = 0; i < mylib_const::MAX_PLAYER; i++)
+	{//CSceneのプレイヤーを数える
 		CPlayer *pPlayer = CScene::GetPlayer(i);
-		if (pPlayer == nullptr)
+		if (pPlayer != nullptr)
 		{
-			continue;
-		}
-		if (pPlayer->GetDeath())
-		{
-			pPlayer = CPlayer::Create(D3DXVECTOR3(0.0f, 100.0f, 0.0f), D3DXVECTOR3(0.0f, 0.0f, 0.0f));
-			
-			if (pPlayer == nullptr)
+			if (pPlayer->GetDelete())
 			{
-				continue;
+				pPlayer->SetDeath(true);
+				pPlayer = nullptr;
+				CScene::SetPlayer(nullptr, i);
 			}
-			
-			pPlayer->SetIdx(i);
-			pPlayer->SetMember(static_cast<my_Identity::eMember>(i + 1));
-		}
 
-		SetPlayer(pPlayer, i);
+			nNumPlayer++;
+		}
+	}
+
+	if (nNumPlayer == 1 && CManager::GetInstance()->GetScene()->GetNumPlayer() >= 2)
+	{//複数人居たのにプレイヤー1人だけ
+		CManager::GetInstance()->SetResult(CManager::RT_WIN);
 	}
 }
 

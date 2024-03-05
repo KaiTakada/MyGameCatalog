@@ -17,8 +17,7 @@
 //=========================
 // 前方宣言
 //=========================
-//class CRenderer;
-class CTimer;
+class CUI_Result;
 
 //=========================
 // 画面(シーン)クラス
@@ -38,7 +37,7 @@ public:
 protected:
 
 private:
-	CTimer *m_pTimer;		//スコア
+	CUI_Result *m_pResultUI;		//プレイヤ―のフレーム
 };
 
 #endif

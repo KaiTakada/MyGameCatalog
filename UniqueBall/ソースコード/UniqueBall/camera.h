@@ -28,6 +28,7 @@ public:
 	D3DXVECTOR3 GetRot(void) { return m_rot; }
 	void PlayerStalk(void);
 	void EditStalk(void);
+	void SetRot(D3DXVECTOR3 rot) { m_rot = rot; }		//角度
 
 protected:
 	D3DXMATRIX GetMtxProj() { return m_mtxProjection; }				//プロジェクションマトリックス
@@ -50,7 +51,6 @@ protected:
 	void SetAngle(float fAngle) { m_fAngle = fAngle; }		//角度
 	float GetDis() { return m_fDis; }				//距離
 	void SetDis(float fDis) { m_fDis = fDis; }		//距離
-	void SetRot(D3DXVECTOR3 rot) { m_rot = rot; }		//角度
 
 	void RotControll();		//マウスで向きを調整
 

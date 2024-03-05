@@ -241,6 +241,54 @@ void CInputGamepad::Update(void)
 	}
 }
 
+//======================================
+// いずれか入力
+//======================================
+bool CInputGamepad::GetPressOR(PADBUTTON button)
+{
+	for (int i = 0; i < sizeof(m_aButtonState) / sizeof(m_aButtonState[0]); i++)
+	{
+		if (m_aButtonState[i].Gamepad.wButtons & (0x01 << button) ? true : false)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+//======================================
+// いずれか入力
+//======================================
+bool CInputGamepad::GetTriggerOR(PADBUTTON button)
+{
+	for (int i = 0; i < sizeof(m_aButtonStateTrigger) / sizeof(m_aButtonStateTrigger[0]); i++)
+	{
+		if (m_aButtonStateTrigger[i].Gamepad.wButtons & (0x01 << button) ? true : false)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+//======================================
+// いずれか入力
+//======================================
+bool CInputGamepad::GetReleaseOR(PADBUTTON button)
+{
+	for (int i = 0; i < sizeof(m_aButtonStateRelease) / sizeof(m_aButtonStateRelease[0]); i++)
+	{
+		if (m_aButtonStateRelease[i].Gamepad.wButtons & (0x01 << button) ? true : false)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 //========================= マウス =========================
 //======================================
 // [マウス]コンストラクタ

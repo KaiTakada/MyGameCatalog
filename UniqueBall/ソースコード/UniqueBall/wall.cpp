@@ -17,7 +17,7 @@
 //==================================
 namespace
 {
-	const char* TEX_FIELD = "data\\TEXTURE\\FIELD\\rock.jpg";
+	const char* TEX_FIELD = "data\\TEXTURE\\BG\\wall.jpg";
 	const int DEF_NUM_DIF = 8;
 }
 
@@ -149,77 +149,46 @@ CWall * CWall::Create(const D3DXVECTOR3 pos, const D3DXVECTOR3 rot, const D3DXVE
 
 //====================================
 // 乗っているオブジェクトの位置y取得
+// 引数：
+// [In](posObj)判定対象の座標
+// [In](posOldObj)判定対象の過去座標
+// [Out](posCross)交点
+// 返り値：当たったかどうか(true:当たった,false:当たってない)
 //====================================
-float CWall::CollisionChara(D3DXVECTOR3 posObj)
+bool CWall::CollisionChara(D3DXVECTOR3 posObj, D3DXVECTOR3 posOldObj, D3DXVECTOR3 *posCross)
 {
-	D3DXVECTOR3 vecToPos0, vecToPos1, vecToPos2, vecToPos3;			//pos0とpos1の差分（位置関係）
-	D3DXVECTOR3 vecLine0, vecLine1, vecLine2, vecLine3;		//壁の長さ
-	D3DXVECTOR3 vecLineMid, vecToPosMid;	//真ん中の長さ・差分
+	bool bCol = false;
 
-	D3DXVECTOR3 Vtxpos0, Vtxpos1, Vtxpos2, Vtxpos3;
+	D3DXVECTOR3 posPoly0;		//pos0
+	D3DXVECTOR3 posPoly1;		//pos1
+	D3DXVECTOR3 posPoly2;		//pos2
+	D3DXVECTOR3 posPoly3;		//pos3
 
-	GetPolyPos(&Vtxpos0, &Vtxpos1, &Vtxpos2, &Vtxpos3);
+	GetPolyPos(&posPoly0, &posPoly1, &posPoly2, &posPoly3);
 
-	vecLine0 = Vtxpos1 - Vtxpos0;
-	vecToPos0 = posObj - Vtxpos0;
+	D3DXVECTOR3 vecToPos;		//pos0とpos1の差分（位置関係）
+	D3DXVECTOR3 vecLine;		//壁の長さ
+	D3DXVECTOR3 vecMove;		//弾のベクトル
+	float fRate;		//交点の割合
 
-	vecLine1 = Vtxpos0 - Vtxpos2;
-	vecToPos1 = posObj - Vtxpos2;
+	vecLine = posPoly1 - posPoly0;
+	vecToPos = posObj - posPoly0;
+	vecMove = posObj - posOldObj;
 
-	vecLine2 = Vtxpos2 - Vtxpos3;
-	vecToPos2 = posObj - Vtxpos3;
+	fRate = (((vecToPos.z * vecMove.x) - (vecToPos.x * vecMove.z))	//A
+		/ ((vecLine.z * vecMove.x) - (vecLine.x * vecMove.z)));	//B
 
-	vecLine3 = Vtxpos3 - Vtxpos1;
-	vecToPos3 = posObj - Vtxpos1;
-
-	//真ん中
-	vecLineMid = Vtxpos1 - Vtxpos2;
-	vecToPosMid = posObj - Vtxpos2;
-
-	//プレイヤーがポリゴンの内側にいる
-	if ((vecLine0.z * vecToPos0.x) - (vecLine0.x * vecToPos0.z) >= 0.0f &&
-		(vecLine1.z * vecToPos1.x) - (vecLine1.x * vecToPos1.z) >= 0.0f &&
-		(vecLine2.z * vecToPos2.x) - (vecLine2.x * vecToPos2.z) >= 0.0f &&
-		(vecLine3.z * vecToPos3.x) - (vecLine3.x * vecToPos3.z) >= 0.0f)
-	{
-		D3DXVECTOR3 nor;
-		float fHeight;		//求める高さ
-
-		//対象オブジェクトへのベクトル
-		D3DXVECTOR3 vec0;
-		D3DXVECTOR3 vec1;
-		D3DXVECTOR3 VtxposOrg;
-		D3DXVECTOR3 vecP;
-
-		if ((vecLineMid.z * vecToPosMid.x) - (vecLineMid.x * vecToPosMid.z) <= 0.0f)
+	if ((vecLine.z * vecToPos.x)
+		- (vecLine.x * vecToPos.z) <= 0.0f
+		&& fRate >= 0.0f && fRate <= 1.0f)
+	{//当たった
+		if (posCross != nullptr)
 		{
-			VtxposOrg = Vtxpos0;
-			vecP = posObj - Vtxpos0;
-			vec0 = Vtxpos1 - Vtxpos0;
-			vec1 = Vtxpos2 - Vtxpos0;
-		}
-		else
-		{
-			VtxposOrg = Vtxpos3;
-			vecP = posObj - Vtxpos3;
-			vec0 = Vtxpos2 - Vtxpos3;
-			vec1 = Vtxpos1 - Vtxpos3;
+			*posCross = vecLine * fRate;	//交点
 		}
 
-		//2つのベクトルから法線を求める
-		D3DXVec3Cross(&nor, &vec0, &vec1);
-
-		//法線を正規化
-		D3DXVec3Normalize(&nor, &nor);
-
-		if (nor.y != 0.0f)
-		{//起伏がなかった場合
-
-			fHeight = (-((vecP.x * nor.x) + (vecP.z * nor.z)) + (VtxposOrg.y * nor.y)) / nor.y;
-
-			return fHeight;
-		}
+		bCol = true;
 	}
 
-	return posObj.y;
+	return bCol;
 }

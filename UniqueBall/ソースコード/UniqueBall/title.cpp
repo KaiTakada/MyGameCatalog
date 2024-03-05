@@ -91,7 +91,7 @@ void CTitle::Uninit()
 
 	if (m_pEnter != nullptr)
 	{
-		m_pEnter->Uninit();
+		m_pEnter->SetDeath(true);
 		m_pEnter = nullptr;
 	}
 
@@ -113,7 +113,7 @@ void CTitle::Update()
 	CFade *pFade = CScene::GetFade();
 
 	if (pInputKeyboard->GetTrigger(DIK_RETURN) || pInputKeyboard->GetTrigger(DIK_SPACE) || 
-		pInputPad->GetPress(CInputGamepad::BUTTON_A, 0) == true)
+		pInputPad->GetPressOR(CInputGamepad::BUTTON_A) == true)
 	{//[ Enter ]キーでポーズ
 		if (pFade->SetState(CScene::MODE_TUTORIAL))
 		{
@@ -121,20 +121,16 @@ void CTitle::Update()
 		}
 		m_nTimeInterval = 4;							//点滅間隔を小さくする
 	}
-	else if (m_nCntRanking >= 600)
-	{
-		pFade->SetState(CScene::MODE_RANKING);
-	}
 
 	if (m_pField != nullptr)
 	{
 		m_pField->SetPos(D3DXVECTOR3(0.0f, 0.0f, 0.0f));
 	}
 
-	if (m_pEnter != nullptr)
-	{
-		m_pEnter->Update();
-	}
+	//if (m_pEnter != nullptr)
+	//{
+	//	m_pEnter->Update();
+	//}
 
 	CScene::Update();
 }

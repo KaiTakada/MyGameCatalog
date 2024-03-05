@@ -9,6 +9,7 @@
 
 #include "ball_ganarator.h"
 #include "wp_ball.h"
+#include "effect.h"
 
 //=======================
 // ’è”’è‹`
@@ -122,6 +123,13 @@ void CBallGenerator::Update(void)
 			pos.y += m_pBall->GetMaxVtx().y;
 			m_pBall->SetPos(pos);
 			m_pBall->SetDeathCtr(100);
+
+			//‚ ‚é
+			CEffect *pEffect = CEffect::Create(pos);
+			pEffect->SetZtest(false);
+			pEffect->SetSize(D3DXVECTOR3(100.0f, 100.0f, 100.0f));
+			pEffect->SetColor(D3DXCOLOR(0.0f, 1.0f, 0.0f, 0.5f));
+			pEffect->SetLight(true);
 		}
 	}
 

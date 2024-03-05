@@ -29,10 +29,13 @@ public:
 	void SetViewPos();	//位置設定
 	void PlayerStalk();
 	void RotControll();
+	D3DVIEWPORT9 GetViewPort() { return m_viewport; }	//ビューポート取得
 
 protected:
 
 private:
+	void Debug();
+		
 	D3DVIEWPORT9 m_viewport;	//ビューポート
 	int m_nIdx;	//番号
 };

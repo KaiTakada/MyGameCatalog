@@ -27,6 +27,10 @@
 #include "state_life.h"		//状態管理
 #include "ef_smoke.h"		//煙演出
 #include "wp_ball.h"		//ボールの当たり判定
+#include "ui_life.h"		//体力UI
+#include "objectBillboard.h"		//チャージ演出
+#include "texture.h"		//チャージ演出
+#include "Anim.h"		//チャージ演出
 
 //デバッグ用(おそらく消す)
 #include "bullet.h"
@@ -40,7 +44,6 @@
 //============================
 // マクロ定義
 //============================
-
 namespace
 {
 	const float NUM_GETAREA(100.0f);		//取得領域の半径
@@ -54,17 +57,26 @@ namespace
 	const float NUM_JUMP(15.0f);			//ジャンプ力
 	const float NUM_BOOST(40.0f);			//ブースト力
 	const float NUM_GRAV(0.5f);				//重力
+	const float MAX_THROW_CHARGE(0.5f);			//チャージ上限
+	const float ADD_THROW_CHARGE(0.01f);		//チャージ
 	const int HANDR_IDX = 12;			//右手Idx
 	const int READ_PSIZE(256);			//読込ポインタサイズ
 	const int DAMAGE_CT(30);			//ダメージ無敵時間
-	const int WAIT_JC(-10);			//ジャストキャッチ猶予時間
+	const int WAIT_JC(-3);			//ジャストキャッチ猶予時間
 	const int CT_CATCH(30);			//キャッチCT
 	const int CT_TACKLE(30);			//タックルCT
 	const int CT_JUMP2(30);			//2段ジャンプCT
 	const int NUM_HP(2);			//HP量
-}
+	const char* MOTION_FILE = "data\\SET\\MOTION\\motion_player.txt";		//モーションファイルパス
 
-#define MOTION_FILE "data\\SET\\MOTION\\motion_player.txt"		//モーションファイルパス
+	const char* UV_FILE_BODY[mylib_const::MAX_PLAYER] =
+	{
+		"data\\TEXTURE\\PLAYER\\human_body_use.png",
+		"data\\TEXTURE\\PLAYER\\human_body_use1.png",
+		"data\\TEXTURE\\PLAYER\\human_body_use.png",
+		"data\\TEXTURE\\PLAYER\\human_body_use.png",
+	};		//UVテクスチャパス
+}
 
 //============================
 // 定数定義
@@ -104,9 +116,13 @@ CPlayer::CPlayer(int nPriority) : CObject(nPriority)
 	m_eMember = my_Identity::MEMBER_NONE;
 	m_nCatchCtr = 0;
 	m_nTackleCtr = 0;
+	m_fThrowChargeCtr = 0.0f;
 	m_nJump2Ctr = 0;
-	m_nThrowChargeCtr = 0;
 	m_nIdx = 0;		//自身の番号
+
+	m_bDelete = false;
+	m_bTarget = false;
+	m_pTargetMark = nullptr;
 }
 
 //============================
@@ -122,18 +138,55 @@ CPlayer::~CPlayer()
 //====================================
 HRESULT CPlayer::Init(void)
 {
-	m_pos = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
-	m_rot = D3DXVECTOR3(0.0f, D3DX_PI * 0.5f, 0.0f);
+	m_pos = mylib_const::DEFVEC3;
+	m_posOld = m_pos;
 	m_size = MAX_PLAYER_SIZE;
+	m_rot = mylib_const::DEFVEC3;
 	m_rotDest = m_rot;
+	m_nNumModel = 0;
 	m_fHeart = NUM_HEART;
 	m_param.nLife = NUM_HP;
 	m_param.nLifeMax = NUM_HP;
+	m_param.fAttack = NUM_ATTACK;
 	m_param.fSpeed = NUM_SPEED;
 	m_param.fColl = NUM_COLL;
 
+	//モーションの生成、初期化
+	if (m_pMotion != nullptr)
+	{
+		return E_FAIL;
+	}
+
+	m_pMotion = new CMotion;
+	m_pMotion->Init();
+
 	//ファイル読込＆パーツ生成・初期化
 	ReadFile();
+
+	m_pMotion->SetModel(m_apPart, m_nNumModel);
+
+	if (m_pBall != nullptr)
+	{
+		m_pBall = nullptr;
+	}
+
+	//状態の生成
+	if (m_pStateLife != nullptr)
+	{
+		m_pStateLife->Uninit();
+		m_pStateLife = nullptr;
+	}
+
+	m_pStateLife = CState_Life::Create();
+
+	//体力UIの生成
+	if (m_pLifeUI != nullptr)
+	{
+		m_pLifeUI->Uninit();
+		m_pLifeUI = nullptr;
+	}
+
+	m_pLifeUI = CUI_Life::Create(m_param.nLifeMax, m_nIdx);
 
 	//タイプ設定
 	SetType(TYPE_PLAYER);
@@ -188,16 +241,14 @@ HRESULT CPlayer::Init(const D3DXVECTOR3 pos, const D3DXVECTOR3 rot, int nNumPart
 
 	m_pStateLife = CState_Life::Create();
 
-	////体力UIの生成
-	//if (m_pLifeUI != nullptr)
-	//{
-	//	m_pLifeUI->Uninit();
-	//	m_pLifeUI = nullptr;
-	//}
+	//体力UIの生成
+	if (m_pLifeUI != nullptr)
+	{
+		m_pLifeUI->Uninit();
+		m_pLifeUI = nullptr;
+	}
 
-	//m_pLifeUI = CObject2D::Create(mylib_const::DEFVEC3, mylib_const::DEFVEC3, mylib_const::DEFVEC3, CObject2D::UPDATE_TYPE_NONE);
-	//m_pLifeUI->SetPos(D3DXVECTOR3(SCREEN_WIDTH, SCREEN_HEIGHT, 0.0f));
-	//m_pLifeUI->SetSize(D3DXVECTOR3(100.0f, 100.0f, 0.0f));
+	m_pLifeUI = CUI_Life::Create(m_param.nLifeMax, m_nIdx);
 
 	//タイプ設定
 	SetType(TYPE_PLAYER);
@@ -236,6 +287,13 @@ void CPlayer::Uninit(void)
 	{
 		m_pStateLife->Uninit();
 		m_pStateLife = nullptr;
+	}
+
+	//オブジェクト
+	if (m_pLifeUI != nullptr)
+	{
+		m_pLifeUI->SetDeath(true);
+		m_pLifeUI = nullptr;
 	}
 
 	//終了
@@ -285,12 +343,13 @@ void CPlayer::Update(void)
 
 	//2段ジャンプorジャンプ
 	if (pInputKeyboard->GetTrigger(DIK_SPACE) ||
-		pInputGamepad->GetPadTrigger(CInputGamepad::BUTTON_A,m_nIdx))
+		pInputGamepad->GetTrigger(CInputGamepad::BUTTON_A, m_nIdx))
 	{//[ - ]キー
 
-		if (m_bJump == true &&
-			m_pMotion->GetType() != MOTIONTYPE_JUMP2 &&
-			m_nJump2Ctr == 0)
+		if (m_bJump == true
+			&& m_pMotion->GetType() != MOTIONTYPE_JUMP2
+			&& m_pMotion->GetType() != MOTIONTYPE_TACKLE
+			&& m_nJump2Ctr == 0)
 		{//ジャンプ使用済み
 			m_bJump = true;
 			m_move.y = NUM_JUMP * 0.5f;
@@ -310,39 +369,45 @@ void CPlayer::Update(void)
 			pSmoke->SetLifeMax(10);
 		}
 	}
-	
+
 	//タックル
-	if ((pInputKeyboard->GetPress(DIK_LSHIFT) ||
-		pInputGamepad->GetPress(CInputGamepad::BUTTON_Y, m_nIdx))
-		&& (m_bJump == false) && (m_pMotion->GetType() != MOTIONTYPE_TACKLE)
+	if ((pInputKeyboard->GetTrigger(DIK_LSHIFT) ||
+		pInputGamepad->GetTrigger(CInputGamepad::BUTTON_Y, m_nIdx))
+		 && m_pMotion->GetType() != MOTIONTYPE_TACKLE
 		&& m_nTackleCtr == 0)
 	{//[]キー押下＆ジャンプしていない
-		m_move.x = sinf(GetRot().y + 1.0f * D3DX_PI) * NUM_BOOST;		//x
-		m_move.z = cosf(GetRot().y + 1.0f * D3DX_PI) * NUM_BOOST;		//z
+		float fStickL = pInputGamepad->GetStickLRot(m_nIdx);
+		m_move.x = sinf(GetRot().y + fStickL + D3DX_PI * 1.0f) * NUM_BOOST;		//x
+		m_move.z = cosf(GetRot().y + fStickL + D3DX_PI * 1.0f) * NUM_BOOST;		//z
 		m_pMotion->Set(MOTIONTYPE_TACKLE);
+	
+		CManager::GetInstance()->GetSound()->PlaySound(CSound::SOUND_LABEL_SE_TACKLE);
 	}
 
 	//投げ構え
 	if ((pInputMouse->GetPress(CInputMouse::BUTTON_LEFT) ||
-		pInputKeyboard->GetPress(DIK_RCONTROL) ||
-		pInputGamepad->GetPressByteRT(m_nIdx) > 0)
+		pInputGamepad->GetPress(CInputGamepad::BUTTON_RB, m_nIdx))
 		&& (m_pMotion->GetType() != MOTIONTYPE_THROW
-		&& m_pMotion->GetType() != MOTIONTYPE_TACKLE
-		&& m_pMotion->GetType() != MOTIONTYPE_CATCH_RDY))
-	{
-		{//[Rctrl]キー押下＆投げていない
-		
-			if (m_pBall != nullptr)
-			{//投げ
-				m_pMotion->Set(MOTIONTYPE_THROW_RDY);
+			&& m_pMotion->GetType() != MOTIONTYPE_TACKLE
+			&& m_pMotion->GetType() != MOTIONTYPE_CATCH_RDY))
+	{//[Rctrl]キー押下＆投げていない
+
+		if (m_pBall != nullptr)
+		{
+			if (m_pMotion->GetType() == MOTIONTYPE_THROW_RDY &&
+				m_fThrowChargeCtr < MAX_THROW_CHARGE)
+			{//チャージ
+				m_pBall->AddSpeedMag(ADD_THROW_CHARGE);
+				m_fThrowChargeCtr += ADD_THROW_CHARGE;
 			}
+
+			m_pMotion->Set(MOTIONTYPE_THROW_RDY);
 		}
 	}
 
 	//投げ
 	if ((pInputMouse->GetRelease(CInputMouse::BUTTON_LEFT) ||
-		pInputKeyboard->GetRelease(DIK_RCONTROL) ||
-		pInputGamepad->GetReleaseByteRT(m_nIdx) > 0
+		pInputGamepad->GetRelease(CInputGamepad::BUTTON_RB, m_nIdx)
 		&& m_pMotion->GetType() == MOTIONTYPE_THROW_RDY))
 	{
 		if (m_pBall != nullptr)
@@ -353,8 +418,7 @@ void CPlayer::Update(void)
 
 	//キャッチ構え
 	if ((pInputMouse->GetTrigger(CInputMouse::BUTTON_RIGHT) ||
-		pInputKeyboard->GetTrigger(DIK_RSHIFT) ||
-		pInputGamepad->GetTriggerByteLT(m_nIdx) > 0)
+		pInputGamepad->GetTrigger(CInputGamepad::BUTTON_LB, m_nIdx))
 		&& (m_pMotion->GetType() != MOTIONTYPE_CATCH_RDY)
 		&& (m_pMotion->GetType() != MOTIONTYPE_TACKLE)
 		&& m_nCatchCtr == 0)
@@ -364,16 +428,21 @@ void CPlayer::Update(void)
 		m_nCatchCtr = WAIT_JC;
 	}
 
+	if (pInputGamepad->GetTrigger(CInputGamepad::BUTTON_X, m_nIdx))
+	{
+		m_bTarget = !m_bTarget;
+	}
+
 	CollisionBall(pos);
 	DebugKey(pInputKeyboard);
 
-//#if _DEBUG
-//	DebugKey(pInputKeyboard);
-//#endif
+	//#if _DEBUG
+	//	DebugKey(pInputKeyboard);
+	//#endif
 
 	CPlayer::MOTIONTYPE Mtype = MOTIONTYPE(m_pMotion->GetType());
 
-	if (Mtype != MOTIONTYPE_TACKLE && Mtype != MOTIONTYPE_THROW)
+	if (Mtype != MOTIONTYPE_TACKLE)
 	{
 		//サイズに通常に修正
 		m_size = MAX_PLAYER_SIZE;
@@ -381,39 +450,10 @@ void CPlayer::Update(void)
 	else
 	{//スライディング中だったら
 
-		if (m_pMotion->GetTotalCtr() % 3 == 0)
-		{//残像的な青エフェクト
-
-			CEffect *pEffect = CEffect::Create(D3DXVECTOR3(m_pos.x, m_pos.y + m_fHeart, m_pos.z));
-			pEffect->SetSize(D3DXVECTOR3(50.0f, 50.0f, 50.0f));
-			pEffect->SetLifeMax(60);
-			pEffect->SetLife(60);
-
-			if (Mtype == MOTIONTYPE_TACKLE)
-			{//スライディングは青
-				pEffect->SetColor(D3DXCOLOR(0.0f, 0.0f, 0.9f, 0.9f));
-			}
-		}
 	}
 
-	if (m_nCatchCtr > 0)
-	{//クールタイム中
-		m_nCatchCtr--;
-	}
-	else if (m_nCatchCtr < 0)
-	{//ジャスト時
-		m_nCatchCtr++;
-	}
-
-	if (m_nTackleCtr > 0)
-	{//タックルCT中
-		m_nTackleCtr--;
-	}
-
-	if (m_nJump2Ctr > 0)
-	{//2段ジャンプCT中
-		m_nJump2Ctr--;
-	}
+	MotionEffect();
+	ReduceCounter();
 
 	//重力
 	float fGrav = 1.0f;
@@ -429,21 +469,42 @@ void CPlayer::Update(void)
 
 	//高さを取得する
 	CollisionField(pos);
-	CollisionWall(pos);
+	CollisionWall();
+	Target();
 
 	if (Mtype == MOTIONTYPE_TACKLE)
 	{
 		TackleCollision();
 	}
 
+	//ベタ打ち壁
+	if (pos.x > mylib_const::DEF_FIELD_SIZE.x - NUM_COLL)
+	{
+		pos.x = mylib_const::DEF_FIELD_SIZE.x - NUM_COLL;
+	}
+	else if (pos.x < -mylib_const::DEF_FIELD_SIZE.x + NUM_COLL)
+	{
+		pos.x = -mylib_const::DEF_FIELD_SIZE.x + NUM_COLL;
+	}
+	if (pos.z > mylib_const::DEF_FIELD_SIZE.z - NUM_COLL)
+	{
+		pos.z = mylib_const::DEF_FIELD_SIZE.z - NUM_COLL;
+	}
+	else if (pos.z < -mylib_const::DEF_FIELD_SIZE.z + NUM_COLL)
+	{
+		pos.z = -mylib_const::DEF_FIELD_SIZE.z + NUM_COLL;
+	}
+
 	//落下死救済
-	if (pos.y <= -50.0f)
+	if (pos.y < -50.0f)
 	{
 		pos.y = -50.0f;
 		m_move.y = 0.0f;
 		m_bJump = false;
 		//static_assert(true, "沼");
 	}
+
+	SetPos(D3DXVECTOR3(pos.x, m_pos.y, pos.z));
 
 	//武器の更新
 	if (m_pBall != nullptr)
@@ -455,7 +516,7 @@ void CPlayer::Update(void)
 	if (m_pStateLife != nullptr)
 	{
 		CState_Life::STATE state = m_pStateLife->GetState();
-	
+
 		m_pStateLife->Update();
 
 		if (state == CState_Life::STATE_DAMAGE &&
@@ -476,7 +537,7 @@ void CPlayer::Update(void)
 			}
 		}
 	}
-	
+
 	//移動量を更新(減衰させる)慣性
 	m_move.x += (0 - m_move.x) * 0.1f;
 	m_move.z += (0 - m_move.z) * 0.1f;
@@ -488,6 +549,29 @@ void CPlayer::Update(void)
 	if (m_move.z <= NUM_SPEED_STOP && m_move.z >= -NUM_SPEED_STOP)
 	{//規定値以下で移動量を0に
 		m_move.z = 0.0f;
+	}
+
+	int nRank = -1;
+	if (pScene->GetMode() == CScene::MODE_GAME &&
+		CManager::GetInstance()->GetResult() != CManager::RT_NONE)
+	{
+		bool bRank = false;
+
+		//順位設定
+		for (int i = 0; i < mylib_const::MAX_PLAYER; i++)
+		{
+			nRank = CManager::GetInstance()->GetRank(i);
+
+			if (nRank == m_nIdx)
+			{
+				bRank = true;
+			}
+		}
+
+		if (bRank == false)
+		{
+			CManager::GetInstance()->SetRank(m_nIdx, pScene->GetNumPlayer() - 1);
+		}
 	}
 }
 
@@ -502,6 +586,8 @@ void CPlayer::Draw(void)
 
 	//ワールドマトリックスの初期化
 	D3DXMatrixIdentity(&m_mtxWorld);
+	D3DXMatrixIdentity(&mtxRot);
+	D3DXMatrixIdentity(&mtxTrans);
 
 	//向きを反映
 	D3DXMatrixRotationYawPitchRoll(&mtxRot, m_rot.y, m_rot.x, m_rot.z);
@@ -517,10 +603,14 @@ void CPlayer::Draw(void)
 	//デバッグ
 	CDebugProc *pDebug = CManager::GetInstance()->GetDebugProc();
 	pDebug->Print("--- プレイヤー情報 ---\n");
-	pDebug->Print("現在の方向:%f\n", m_rot.y);
-	pDebug->Print("目標の方向:%f\n", m_rotDest.y);
-	pDebug->Print("現在の位置:%f %f %f\n", m_pos.x, m_pos.y, m_pos.z);
-	pDebug->Print("移動量:%f %f %f\n", m_move.x, m_move.y, m_move.z);
+	pDebug->Print("現在の方向:%f %f %f\n", m_rot.x, m_rot.y, m_rot.z);
+
+	if (m_pBall != nullptr)
+	{
+		pDebug->Print("現在のボールの速度倍率:%f\n", m_pBall->GetSpeedMag());
+	}
+
+	pDebug->Print("キャッチカウント:%d\n", m_nCatchCtr);
 }
 
 //============================
@@ -663,7 +753,7 @@ void CPlayer::MoveOperate(float *pRotDest)
 				m_pMotion->Set(MOTIONTYPE_WALK);
 			}
 		}
-		else
+		else if(m_move.x == 0.0f && m_move.z == 0.0f)
 		{
 
 			m_pMotion->Set(MOTIONTYPE_NEUTRAL);
@@ -1066,28 +1156,38 @@ void CPlayer::Damage(int nDamege)
 		m_param.nLife = m_param.nLifeMax;
 	}
 
+	if (m_pLifeUI != nullptr)
+	{
+		m_pLifeUI->SubLife(nDamege);
+	}
+
 	if (m_pStateLife != nullptr)
 	{
 		mat = m_pStateLife->GetMat();
 	}
 
 	//パーツ一つずつ塗装する
-	for (int nCntPrt = 0; nCntPrt < MAX_PARTS; nCntPrt++)
+	if (nDamege > 0)
 	{
-		if (m_apPart[nCntPrt] != nullptr)
+		for (int nCntPrt = 0; nCntPrt < MAX_PARTS; nCntPrt++)
 		{
-			m_apPart[nCntPrt]->SetMat(mat);
+			if (m_apPart[nCntPrt] != nullptr)
+			{
+				m_apPart[nCntPrt]->SetMat(mat);
+			}
 		}
 	}
 
 	if (m_param.nLife <= 0)
 	{
+		int nRank = -1;
+
 		//死んだら
 		CPlayer *pPlayer = nullptr;
 		CScene *pScene = CManager::GetInstance()->GetScene();
 		switch (pScene->GetMode())
 		{
-		case CScene::MODE_GAME:
+		case CScene::MODE_TUTORIAL:
 			//α版はここで自動リスポーンする
 			CObject::SetDeath(true);	//死亡フラグ
 		
@@ -1098,15 +1198,53 @@ void CPlayer::Damage(int nDamege)
 			pScene->SetPlayer(pPlayer,m_nIdx);
 			break;
 
+		case CScene::MODE_GAME:
+			//α版はここで自動リスポーンする
+			m_bDelete = true;	//死亡フラグ
+
+			//順位設定
+			for (int i = 0; i < mylib_const::MAX_PLAYER; i++)
+			{
+				nRank = CManager::GetInstance()->GetRank(i);
+			
+				if (nRank == -1)
+				{
+					nRank = m_nIdx;
+					CManager::GetInstance()->SetRank(nRank, i);
+					break;
+				}
+			}
+
+			break;
 		default:
 			break;
 		}
-
-		//リザルト設定
-		//CManager::GetInstance()->SetResult(CManager::RT_LOSE);
 	}
 
 	m_pStateLife->SetState(CState_Life::STATE_DAMAGE, DAMAGE_CT);
+}
+
+//============================
+// ノックバック
+//============================
+void CPlayer::Knockback(float fRot)
+{
+	//プレイヤーの向きの逆に飛ばす
+	m_move.x = sinf(fRot + D3DX_PI) * 30.0f;
+	m_move.z = cosf(fRot + D3DX_PI) * 30.0f;
+	m_move.y = 5.0f;
+
+	if (m_pBall != nullptr)
+	{
+		D3DXMATRIX mtx = m_pBall->GetMtxWorld();
+		m_pBall->Throw(D3DXVECTOR3(0.0f, 20.0f, 0.0f), 10.0f);
+		m_pBall->SetParent(nullptr);
+		m_pBall->SetMember(my_Identity::MEMBER_NONE);
+		m_pBall->SetPos(D3DXVECTOR3(mtx._41, mtx._42, mtx._43));
+		m_pBall->SetRot(D3DXVECTOR3(mylib_const::DEFVEC3));
+		m_pBall = nullptr;
+	}
+
 }
 
 //============================
@@ -1218,9 +1356,9 @@ void CPlayer::CollisionField(D3DXVECTOR3 pos)
 //============================
 //ブロックとの当たり判定(矩形)
 //============================
-void CPlayer::CollisionWall(D3DXVECTOR3 pos)
+void CPlayer::CollisionWall()
 {
-	float fHeight = 0.0f;
+	D3DXVECTOR3 Cross = mylib_const::DEFVEC3;
 
 	for (int nCntPrt = 0; nCntPrt < PRIORITY_MAX; nCntPrt++)
 	{
@@ -1236,7 +1374,7 @@ void CPlayer::CollisionWall(D3DXVECTOR3 pos)
 				{//アイテムだったら
 
 					CWall *pWall= (CWall*)pObject;
-					fHeight = pWall->CollisionChara(pos);
+					pWall->CollisionChara(m_pos, m_posOld, &Cross);
 				}
 				pObject = pObject->GetNext();
 			}
@@ -1247,34 +1385,13 @@ void CPlayer::CollisionWall(D3DXVECTOR3 pos)
 		}
 	}
 
-	if (pos.y < fHeight && m_posOld.y >= fHeight)
-	{//着地時
-
-		if (m_bJump)
-		{
-			D3DXVECTOR3 move = { 3.0f, 0.0f, 0.0f };
-
-			//煙演出
-			for (int nCnt = 0; nCnt < 2; nCnt++)
-			{
-				CEf_Smoke * pSmoke = CEf_Smoke::Create(m_pos);
-				pSmoke->SetMove(move);
-				pSmoke->SetLife(15);
-				pSmoke->SetLifeMax(15);
-
-				move.x *= -1.0f;
-			}
-
-			m_pMotion->Set(MOTIONTYPE_GROUND);
-		}
-
-		pos.y = fHeight;
-		m_move.y = 0.0f;
-		m_bJump = false;
+	if (Cross != mylib_const::DEFVEC3)
+	{//判定時
+		m_pos.x = Cross.x;
+		m_pos.z = Cross.z;
+		m_move.x = 0.0f;
+		m_move.z = 0.0f;
 	}
-
-	//座標設定(更新)
-	SetPos(pos);
 }
 
 //============================
@@ -1347,6 +1464,33 @@ void CPlayer::CollisionBall(D3DXVECTOR3 pos)
 								}
 
 								m_pBall = pBall;
+
+								//演出
+								CEffect *pEffect = CEffect::Create(m_pBall->GetWorldPos());
+								pEffect->SetLifeMax(10);
+								pEffect->SetLife(10);
+								pEffect->SetLight(true);
+
+								//ジャスト判定
+								if (m_nCatchCtr < 0)
+								{
+									m_pBall->AddSpeedMag(MAX_THROW_CHARGE);
+								
+									pEffect->SetSize(D3DXVECTOR3(200.0f, 200.0f, 200.0f));
+									pEffect->SetColor(D3DXCOLOR(0.9f, 0.0f, 0.9f, 0.9f));
+								
+									CManager::GetInstance()->GetSound()->PlaySound(CSound::SOUND_LABEL_SE_CATCH);
+								}
+								else
+								{
+									pEffect->SetSize(D3DXVECTOR3(100.0f, 100.0f, 100.0f));
+									pEffect->SetColor(D3DXCOLOR(0.9f, 0.0f, 0.9f, 0.9f));
+								
+									CManager::GetInstance()->GetSound()->PlaySound(CSound::SOUND_LABEL_SE_CATCH);
+								}
+
+								m_fThrowChargeCtr = MAX_THROW_CHARGE;
+
 								m_pMotion->Set(MOTIONTYPE_CATCH);
 
 							}
@@ -1432,8 +1576,8 @@ void CPlayer::TackleCollision()
 						{
 							//ノックバック
 							pPlayer->Damage(0);
+							pPlayer->Knockback(m_rot.y);
 						}
-
 					}
 				}
 
@@ -1444,6 +1588,86 @@ void CPlayer::TackleCollision()
 				break;
 			}
 		}
+	}
+}
+
+//============================
+// モーション時演出
+//============================
+void CPlayer::MotionEffect()
+{
+	if (m_pMotion == nullptr)
+	{
+		return;
+	}
+
+	CTexture *pTexture = CManager::GetInstance()->GetTexture();
+	CObjectBillboardAnim *pAnimBB = nullptr;
+	CEffect *pEffect = nullptr;
+	CAnim *pAnim = nullptr;
+	D3DXMATRIX mtx = {};
+
+	switch (m_pMotion->GetType())
+	{
+	case MOTIONTYPE_NEUTRAL:	//待機
+	case MOTIONTYPE_WALK:		//歩き
+	case MOTIONTYPE_DASH:		//ダッシュ
+	case MOTIONTYPE_JUMP:		//ジャンプ
+	case MOTIONTYPE_JUMP2:		//2段ジャンプ
+	case MOTIONTYPE_GROUND:		//着地
+	case MOTIONTYPE_THROW:		//投げる
+	case MOTIONTYPE_CATCH_RDY:	//キャッチ用構える
+	case MOTIONTYPE_CATCH:		//キャッチ
+		break;
+
+	case MOTIONTYPE_THROW_RDY:	//投げ用構える
+		pEffect = CEffect::Create(m_pBall->GetWorldPos());
+		pEffect->SetSize(D3DXVECTOR3(10.0f, 10.0f, 10.0f) * m_pBall->GetSpeedMag());
+		pEffect->SetLifeMax(10);
+		pEffect->SetLife(10);
+		pEffect->SetColor(D3DXCOLOR(1.0f, 0.3f, 0.3f, 0.2f));
+		pEffect->SetLight(true);
+		break;
+
+	case MOTIONTYPE_TACKLE:		//タックル
+		if (m_pMotion->GetTotalCtr() % 3 == 0)
+		{//残像的な青エフェクト
+			pEffect = CEffect::Create(GetPosCol());
+			pEffect->SetSize(D3DXVECTOR3(50.0f, 50.0f, 50.0f));
+			pEffect->SetLifeMax(60);
+			pEffect->SetLife(60);
+			pEffect->SetColor(D3DXCOLOR(0.3f, 0.3f, 1.0f, 1.0f));
+			pEffect->SetLight(true);
+		}
+		break;
+
+	default:
+		break;
+	}
+}
+
+//============================
+// カウンター減らし
+//============================
+void CPlayer::ReduceCounter()
+{
+	if (m_nCatchCtr > 0)
+	{//クールタイム中
+		m_nCatchCtr--;
+	}
+	else if (m_nCatchCtr < 0)
+	{//ジャスト時
+		m_nCatchCtr++;
+	}
+
+	if (m_nTackleCtr > 0)
+	{//タックルCT中
+		m_nTackleCtr--;
+	}
+
+	if (m_nJump2Ctr > 0)
+	{//2段ジャンプCT中
+		m_nJump2Ctr--;
 	}
 }
 
@@ -1468,11 +1692,21 @@ void CPlayer::Throw()
 		if (pCameraGame != nullptr)
 		{
 			rot = pCameraGame->GetRot();
+			rot.z += D3DX_PI;
+		}
+	}
+
+	if (m_pBall != nullptr && m_bTarget)
+	{
+		if (m_pBall->GetTargetEnemy() != nullptr || m_pBall->GetTargetPlayer() != nullptr)
+		{
+			m_pBall->Target();
+			rot = m_pBall->GetMove();
 		}
 	}
 
 	//少し上向きにする
-	rot.x += my_Identity::THROW_PARABOLA;
+	rot.z += my_Identity::THROW_PARABOLA;
 
 	m_pBall->Throw(rot, my_Identity::THROW_SPEED);
 	m_pBall->SetParent(nullptr);
@@ -1480,5 +1714,166 @@ void CPlayer::Throw()
 	m_pBall->SetRot(D3DXVECTOR3(0.0f, 0.0f, 0.0f));
 	m_pBall = nullptr;
 
+	m_fThrowChargeCtr = 0.0f;
 	m_pMotion->Set(MOTIONTYPE_THROW);
+	CManager::GetInstance()->GetSound()->PlaySound(CSound::SOUND_LABEL_SE_THROW);
+}
+
+//============================
+// ターゲティング
+//============================
+void CPlayer::Target()
+{
+	if (!m_bTarget)
+	{
+		if (m_pTargetMark != nullptr)
+		{
+			m_pTargetMark->SetDeath(true);
+			m_pTargetMark = nullptr;
+		}
+
+		return;
+	}
+
+	D3DXVECTOR3 rot = m_rot;
+	D3DXVECTOR3 pos = m_pos;
+	float fHeight = 0.0f;
+	bool bTag = false;
+
+	CScene *pScene = CManager::GetInstance()->GetScene();
+	if (pScene->GetMode() == CScene::MODE_GAME)
+	{
+		CGame *pGame = static_cast<CGame*>(pScene);
+		CCameraGame *pCameraGame = pGame->GetCamera(m_nIdx);
+		if (pCameraGame != nullptr)
+		{
+			rot = pCameraGame->GetRot();
+		}
+	}
+
+	//敵(プレイヤーorBot)がいるかターゲティング範囲角度にいるか
+	for (int nCntPrt = 0; nCntPrt < PRIORITY_MAX; nCntPrt++)
+	{
+		CObject *pObject = CObject::GetTop(nCntPrt);
+
+		while ((pObject != nullptr))
+		{
+			if (pObject != nullptr)
+			{
+				CObject::TYPE type = pObject->GetType();	//今回のオブジェクトのタイプ
+
+				if (type == CObject::TYPE_PLAYER)
+				{
+					CPlayer *pPlayer = static_cast<CPlayer*>(pObject);
+
+					if (pPlayer == nullptr)
+					{
+						pObject = pObject->GetNext();
+						continue;
+					}
+
+					if (pPlayer->GetMember() == m_eMember)
+					{
+						pObject = pObject->GetNext();
+						continue;
+					}
+
+					pos = pPlayer->GetPos();
+					fHeight = pPlayer->GetHeartPos();
+
+					if (m_pBall != nullptr)
+					{
+						m_pBall->SetTargetPlayer(pPlayer);
+						m_pBall->SetTargetEnemy(nullptr);
+						bTag = true;
+					}
+				}
+				//else if (type == CObject::TYPE_ENEMY)
+				//{
+				//	CEnemy *pEnemy= static_cast<CEnemy*>(pObject);
+
+				//	if (pEnemy != nullptr)
+				//	{
+				//		pos = pEnemy->GetPos();
+
+				//		if (m_pBall != nullptr)
+				//		{
+				//			m_pBall->SetTargetEnemy(pEnemy);
+				//			m_pBall->SetTargetPlayer(nullptr);
+				//			bTag = true;
+				//		}
+				//	}
+				//}
+
+				pObject = pObject->GetNext();
+			}
+			else
+			{// (pObject == NULL) == Endまで行ったってことでこの優先度は終了
+				break;
+			}
+		}
+	}
+
+	//ターゲットマーク
+	if (bTag == false)
+	{
+		if (m_pTargetMark != nullptr)
+		{
+			m_pTargetMark->SetDeath(true);
+			m_pTargetMark = nullptr;
+		}
+		return;
+	}
+
+	if (m_pTargetMark == nullptr)
+	{
+		CTexture *pTexture = CManager::GetInstance()->GetTexture();
+		m_pTargetMark = CObjectBillboard::Create(pos);
+		m_pTargetMark->SetSize(D3DXVECTOR3(150.0f, 150.0f, 150.0f));
+		m_pTargetMark->SetIdxTexture(pTexture->Regist("data\\TEXTURE\\target.png"));
+
+	}
+
+	if (m_pTargetMark != nullptr)
+	{
+		m_pTargetMark->SetPos(D3DXVECTOR3(pos.x, pos.y + fHeight, pos.z));
+	}
+}
+
+//============================
+// UI設定
+//============================
+void CPlayer::InitUI()
+{
+	//体力UIの生成
+	if (m_pLifeUI != nullptr)
+	{
+		m_pLifeUI->SetDeath(true);
+		m_pLifeUI = nullptr;
+	}
+
+	m_pLifeUI = CUI_Life::Create(m_param.nLifeMax, m_nIdx);
+}
+
+//============================
+// モデル設定
+//============================
+void CPlayer::InitModel()
+{
+	//モデルの生成(全パーツ分)
+	for (int nCntCrt = 0; nCntCrt < m_nNumModel; nCntCrt++)
+	{
+		if (m_apPart[nCntCrt] == nullptr)
+		{
+			continue;
+		}
+
+		m_apPart[nCntCrt]->SetTexPass(UV_FILE_BODY[m_nIdx], m_nIdx);	//テクスチャ差し替え
+
+		std::string file = CManager::GetInstance()->GetXModel()->GetFilename(m_apPart[nCntCrt]->GetIdxModel());
+		if (strstr(const_cast<char*>(file.c_str()), "head") == nullptr)
+		{//""がなかったら
+			m_apPart[nCntCrt]->SetIdxParent(m_nIdx);	//テクスチャ差し替え番号
+		}
+	}
 }

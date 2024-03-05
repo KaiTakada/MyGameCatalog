@@ -16,7 +16,7 @@
 // マクロ定義
 //================================
 #define DEF_VERTEX3D D3DXVECTOR3(0.0f,0.0f,0.0f)				//デフォルトサイズ
-#define MAX_XMODEL (128)				//モデルの受け皿容量
+#define MAX_XMODEL (256)				//モデルの受け皿容量
 #define XMODEL_SIZE_META (0.1f)				//モデルの出力倍率
 
 //================================
@@ -43,6 +43,7 @@ public:
 	void Unload(void);		//テクスチャ破棄
 	int Regist(const char *pFilename, D3DXVECTOR3 *vtxMin = nullptr, D3DXVECTOR3 *vtxMax = nullptr);		//モデル追加読込
 	Model *GetAddress(int nIdx); /*{ return m_apModel[nIdx]; }*/		//モデル情報取得
+	char *GetFilename(int nIdx) { return m_apFilename[nIdx]; }		//モデルパス取得
 	D3DXVECTOR3 GetVtxMin(int nIdx) { return m_aModel[nIdx].vtxMin; }		//モデル情報取得
 	D3DXVECTOR3 GetVtxMax(int nIdx) { return m_aModel[nIdx].vtxMax; }		//モデル情報取得
 

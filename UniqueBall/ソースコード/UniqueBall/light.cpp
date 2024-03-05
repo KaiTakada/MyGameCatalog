@@ -6,13 +6,15 @@
 //============================
 #include "manager.h"
 #include "light.h"
+#include "debugproc.h"
+#include "input.h"
 
 //============================
 // コンストラクタ
 //============================
 CLight::CLight()
 {
-
+	m_nDebugNum = 0;
 }
 
 //============================
@@ -44,22 +46,22 @@ HRESULT CLight::Init(void)
 		{//ライトの拡散校と方向を設定
 		case 0:
 			m_light[nCntLight].Diffuse = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);
-			vecDir = D3DXVECTOR3(0.22f, -0.87f, 0.44f);
+			vecDir = D3DXVECTOR3(-1.87, -1.57, 2.65);
 			break;
 
 		case 1:
-			m_light[nCntLight].Diffuse = D3DXCOLOR(0.65f, 0.65f, 0.65f, 1.0f);
-			vecDir = D3DXVECTOR3(-0.18f, 0.88f, -0.44f);
+			m_light[nCntLight].Diffuse = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);
+			vecDir = D3DXVECTOR3(-1.87, -1.57, -2.65);
 			break;
 
 		case 2:
-			m_light[nCntLight].Diffuse = D3DXCOLOR(0.15f, 0.15f, 0.15f, 1.0f);
-			vecDir = D3DXVECTOR3(0.89f, -0.11f, 0.44f);
+			m_light[nCntLight].Diffuse = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);
+			vecDir = D3DXVECTOR3(3.03f, -1.57f, -2.57f);
 			break;
 
 		default:
 			m_light[nCntLight].Diffuse = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);
-			vecDir = D3DXVECTOR3(0.22f, -0.87f, 0.44f);
+			vecDir = D3DXVECTOR3(0.0f, -0.0f, 0.0f);
 			break;
 		}
 
@@ -89,5 +91,58 @@ void CLight::Uninit(void)
 //============================
 void CLight::Update(void)
 {
+	//デバッグ
+#if _DEBUG
+	D3DXVECTOR3 pos = m_light[m_nDebugNum].Direction;
+	CDebugProc *pDebug = CManager::GetInstance()->GetDebugProc();
+	pDebug->Print("--- ライト情報 ---\n");
+	pDebug->Print("現在の番号:%d\n", m_nDebugNum);
+	pDebug->Print("現在の方向:%f %f %f\n", pos.x, pos.y, pos.z);
 
+	CInputKeyboard *pInputKeyboard = CManager::GetInstance()->GetInputKeyboard();
+
+	if (pInputKeyboard->GetTrigger(DIK_RALT))
+	{
+		m_nDebugNum++;
+		m_nDebugNum %= MAX_LIGHT;
+	}
+	if (pInputKeyboard->GetPress(DIK_UP))
+	{
+		pos.z += 0.01f;
+	}
+	if (pInputKeyboard->GetPress(DIK_DOWN))
+	{
+		pos.z -= 0.01f;
+	}
+	if (pInputKeyboard->GetPress(DIK_RIGHT))
+	{
+		pos.x += 0.01f;
+	}
+	if (pInputKeyboard->GetPress(DIK_LEFT))
+	{
+		pos.x -= 0.01f;
+	}
+	if (pInputKeyboard->GetPress(DIK_RSHIFT))
+	{
+		pos.y += 0.01f;
+	}
+	if (pInputKeyboard->GetPress(DIK_RCONTROL))
+	{
+		pos.y -= 0.01f;
+	}
+
+	pos.x = mylib_useful::NormalizeRot(pos.x);
+	pos.y = mylib_useful::NormalizeRot(pos.y);
+	pos.z = mylib_useful::NormalizeRot(pos.z);
+
+	m_light[m_nDebugNum].Direction = pos;
+
+	//ライトを設定する
+	LPDIRECT3DDEVICE9 pDevice = CManager::GetInstance()->GetRenderer()->GetDevice();
+	pDevice->SetLight(m_nDebugNum, &m_light[m_nDebugNum]);
+
+	//ライトを有効にする
+	pDevice->LightEnable(m_nDebugNum, TRUE);
+
+#endif
 }

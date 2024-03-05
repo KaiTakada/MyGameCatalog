@@ -10,6 +10,8 @@
 #include "manager.h"
 #include "bullet.h"
 #include "Field.h"
+#include "player.h"
+#include "enemy.h"
 
 #include "sound.h"
 #include "particle.h"
@@ -19,9 +21,10 @@
 //=======================
 namespace
 {
-	const float GRAVITY = 0.5f;		//重力
+	const float GRAVITY = 0.2f;		//重力
 	const float NUM_RESIST(0.02f);		//移動抵抗
 	const float STOP_SPEED = 0.4f;		//停止する低限速度
+	const float FALL_HEIGHT = 10000.0f;		//絶対落下標高
 	const float COLLISION_RAD = 50.0f;		//当たり半径
 	const int DEATHCTR = 300;		//消滅猶予時間
 }
@@ -42,6 +45,9 @@ CBall::CBall(int nPriority) : CWeapon(nPriority)
 	m_eMember = my_Identity::MEMBER_NONE;
 	m_bLand = false;
 	m_nDeathCtr = 0;
+	m_fSpeedMag = 0.0f;
+	m_pTargetPlayer = nullptr;
+	m_pTargetEnemy = nullptr;
 
 	s_nNumAll++;
 }
@@ -61,6 +67,7 @@ HRESULT CBall::Init(void)
 {
 	m_fRad = COLLISION_RAD;
 	m_nDeathCtr = DEATHCTR;
+	m_fSpeedMag = 1.0f;
 	CWeapon::Init();
 	
 	SetType(TYPE_BALL);
@@ -75,6 +82,7 @@ HRESULT CBall::Init(const D3DXVECTOR3 pos, const D3DXVECTOR3 rot)
 {
 	m_fRad = COLLISION_RAD;
 	m_nDeathCtr = DEATHCTR;
+	m_fSpeedMag = 1.0f;
 	CWeapon::Init(pos, rot, CWeapon::WPNTYPE_BALL);
 
 	SetType(TYPE_BALL);
@@ -87,6 +95,16 @@ HRESULT CBall::Init(const D3DXVECTOR3 pos, const D3DXVECTOR3 rot)
 //=======================
 void CBall::Uninit(void)
 {
+	if (m_pTargetPlayer != nullptr)
+	{
+		m_pTargetPlayer  = nullptr;
+	}
+
+	if (m_pTargetEnemy != nullptr)
+	{
+		m_pTargetEnemy = nullptr;
+	}
+
 	CWeapon::Uninit();
 }
 
@@ -108,15 +126,54 @@ void CBall::Update(void)
 	}
 
 	//@移動-------------
+	//Target();
+
+	float fGravMul = 1.0f;
+	if (pos.y > FALL_HEIGHT)
+	{
+		fGravMul = 1.3f;
+	}
 
 	//重力
-	m_move.y -= GRAVITY;
+	m_move.y -= GRAVITY * fGravMul;
 
 	//高さを取得する
 	CollisionField(pos);
 
 	//移動量を適用
 	SetPos(pos += m_move); 
+
+	//ベタ打ち壁
+	bool bCol = false;
+	if (pos.x > mylib_const::DEF_FIELD_SIZE.x - COLLISION_RAD)
+	{
+		pos.x = mylib_const::DEF_FIELD_SIZE.x - COLLISION_RAD;
+		bCol = true;
+	}
+	else if (pos.x < -mylib_const::DEF_FIELD_SIZE.x + COLLISION_RAD)
+	{
+		pos.x = -mylib_const::DEF_FIELD_SIZE.x + COLLISION_RAD;
+		bCol = true;
+	}
+	if (pos.z > mylib_const::DEF_FIELD_SIZE.z - COLLISION_RAD)
+	{
+		pos.z = mylib_const::DEF_FIELD_SIZE.z - COLLISION_RAD;
+		bCol = true;
+	}
+	else if (pos.z < -mylib_const::DEF_FIELD_SIZE.z + COLLISION_RAD)
+	{
+		pos.z = -mylib_const::DEF_FIELD_SIZE.z + COLLISION_RAD;
+		bCol = true;
+	}
+
+	if (bCol == true)
+	{
+		m_move.x = 0.0f;
+		m_move.y = -1.0f;
+		m_move.z = 0.0f;
+	}
+
+	SetPos(pos);
 
 	//移動量を更新(減衰させる)慣性
 	m_move.x += (0 - m_move.x) * NUM_RESIST;
@@ -131,12 +188,15 @@ void CBall::Update(void)
 		m_move.z = 0.0f;
 	}
 
+	//サイズ
+	SetScale(1.0f + (m_fSpeedMag - 1.0f) * 0.2f);
+
 	//消滅カウントダウン
 	if (m_eMember == my_Identity::MEMBER_NONE)
 	{
 		if (m_nDeathCtr <= 0)
 		{
-			Uninit();
+			SetDeath(true);
 			return;
 		}
 
@@ -166,13 +226,10 @@ void CBall::Attack(const D3DXVECTOR3 rot, const int nDamage)
 //=======================
 void CBall::Throw(const D3DXVECTOR3 vec, float fPower)
 {
-	//m_move.x += sinf(cameraRot.y + -0.25f * D3DX_PI) * m_param.fSpeed;		//x
-
 	//投げる方向を設定
-	m_move.x = sinf(vec.y + 1.0f * D3DX_PI) * fPower;
-	m_move.z = cosf(vec.y + 1.0f * D3DX_PI) * fPower;
-	m_move.y = sinf(vec.x + 1.0f * D3DX_PI) * fPower;
-
+	m_move.x = sinf(vec.y + 1.0f * D3DX_PI) * fPower * m_fSpeedMag;
+	m_move.z = cosf(vec.y + 1.0f * D3DX_PI) * fPower * m_fSpeedMag;
+	m_move.y = sinf(vec.z + 1.0f * D3DX_PI) * fPower * m_fSpeedMag;
 }
 
 //=======================
@@ -188,7 +245,7 @@ bool CBall::CollisionCircle(const D3DXVECTOR3 pos, const float fRad)
 	D3DXVECTOR3 myPos = GetPos();
 
 	//3軸使った球の判定
-	float fColl = m_fRad + fRad;		//当たり判定範囲
+	float fColl = m_fRad * GetScale().x + fRad;		//当たり判定範囲
 
 	float fLength0 = hypotf((myPos.x - pos.x), (myPos.z - pos.z));		//2点間の長さxz
 	float fLength1 = hypotf((myPos.x - pos.x), (myPos.y - pos.y));		//2点間の長さxy
@@ -300,10 +357,50 @@ void CBall::CollisionField(D3DXVECTOR3 pos)
 	{//着地時
 
 		pos.y = fHeight;
-		m_move.y *= -1.0f;
+		m_move.y *= -0.7f;
 		m_eMember = my_Identity::MEMBER_NONE;
+		m_fSpeedMag = 1.0f;
 	}
 
 	//座標設定(更新)
 	SetPos(pos);
+}
+
+//============================
+// ターゲット存在時吸いつき
+//============================
+void CBall::Target()
+{
+	D3DXVECTOR3 pos = mylib_const::DEFVEC3;
+	D3DXVECTOR3 Mypos = GetWorldPos();
+
+	if (m_pTargetPlayer != nullptr)
+	{
+		pos = m_pTargetPlayer->GetPosCol();
+
+		if (m_pTargetPlayer->GetDelete())
+		{
+			m_pTargetPlayer = nullptr;
+		}
+	}
+	else if (m_pTargetEnemy != nullptr)
+	{
+		pos = m_pTargetEnemy->GetPos();
+
+		if (m_pTargetEnemy->GetDelete())
+		{
+			m_pTargetEnemy = nullptr;
+		}
+	}
+	else
+	{
+		return;
+	}
+
+	//ターゲットの方向
+	D3DXVECTOR3 move = GetMove();
+	move = mylib_useful::Point2Rot(pos, Mypos);
+	SetMove(move);
+
+	return;
 }

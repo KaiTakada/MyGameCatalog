@@ -76,15 +76,27 @@ void CTutorial::Uninit()
 //============================
 void CTutorial::Update()
 {
+	if (CManager::GetInstance()->GetScene()->GetMode() != CScene::MODE_TUTORIAL)
+	{
+		return;
+	}
+
 	//キーボード取得
 	CInputKeyboard *pInputKeyboard = CManager::GetInstance()->GetInputKeyboard();
 	CInputGamepad *pInputPad = CManager::GetInstance()->GetInputGamepad();
 	CFade *pFade = CScene::GetFade();
 
 	if (pInputKeyboard->GetTrigger(DIK_RETURN) || pInputKeyboard->GetTrigger(DIK_SPACE) || 
-		pInputPad->GetPress(CInputGamepad::BUTTON_A, 0) == true)
+		pInputPad->GetPressOR(CInputGamepad::BUTTON_A) == true)
 	{//[ Enter ]キーでポーズ
 		if (pFade->SetState(CScene::MODE_GAME))
+		{
+			CManager::GetInstance()->GetSound()->PlaySound(CSound::SOUND_LABEL_SE_BUTTON);
+		}
+	}
+	else if (pInputPad->GetPressOR(CInputGamepad::BUTTON_B) == true)
+	{//[ Enter ]キーでポーズ
+		if (pFade->SetState(CScene::MODE_TITLE))
 		{
 			CManager::GetInstance()->GetSound()->PlaySound(CSound::SOUND_LABEL_SE_BUTTON);
 		}

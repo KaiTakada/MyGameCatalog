@@ -2,10 +2,10 @@ Metasequoia Document
 Format Text Ver 1.0
 
 Scene {
-	pos -33.5777 -100.2003 1554.9696
+	pos -33.5777 -100.2003 1554.9698
 	lookat 0.0000 0.0000 0.0000
-	head 31.5667
-	pich -0.0692
+	head 49.8866
+	pich 0.0792
 	bank 0.0000
 	ortho 0
 	zoom2 4.8232
@@ -18,11 +18,11 @@ Scene {
 	}
 }
 Material 5 {
-	"lambert2SG" col(1.000 1.000 1.000 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00) tex("C:\Users\student\éˆã∆\2022å„ä˙\3Dï\åªãZèpáU\MayaModel\data\TEXTURE\PLAYER\human_face_use.png")
-	"mat1" col(0.322 0.404 1.000 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00)
-	"mat2" col(0.557 0.616 1.000 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00)
+	"lambert2SG" col(1.000 1.000 1.000 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00) tex("data\TEXTURE\PLAYER\human_face_use.png")
+	"mat1" col(0.102 0.098 0.102 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00)
+	"mat2" col(0.361 0.357 0.349 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00)
 	"mat3" col(1.000 0.431 0.039 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00)
-	"mat4" col(0.086 0.086 0.086 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00)
+	"mat4" col(0.898 0.898 0.898 1.000) dif(0.800) amb(0.600) emi(0.000) spc(0.000) power(5.00)
 }
 Object "ñ{ëÃ" {
 	visible 15

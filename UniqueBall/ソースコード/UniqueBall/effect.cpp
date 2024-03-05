@@ -129,13 +129,16 @@ void CEffect::Update(void)
 	}
 
 	//Žõ–½
-	if (m_nLife <= 0)
+	if (m_nLife == 0)
 	{
 		Uninit();
 		return;
 	}
 
-	m_nLife--;
+	if (m_nLife > 0)
+	{
+		m_nLife--;
+	}
 }
 
 //============================

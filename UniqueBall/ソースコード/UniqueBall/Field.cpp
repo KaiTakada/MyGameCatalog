@@ -15,7 +15,7 @@
 //==================================
 // É}ÉNÉçíËã`
 //==================================
-#define TEX_FIELD "data\\TEXTURE\\FIELD\\rock.jpg"
+#define TEX_FIELD "data\\TEXTURE\\BG\\field.jpg"
 #define DEF_NUM_DIF (8)
 
 //==================================

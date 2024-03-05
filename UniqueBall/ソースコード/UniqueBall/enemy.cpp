@@ -96,6 +96,7 @@ CEnemy::CEnemy(int nPriority) : CObject(nPriority)
 	m_eMember = my_Identity::MEMBER_NONE;
 	m_nCatchCtr = -1;
 	m_nThrowCtr = 0;
+	m_bDelete = false;
 }
 
 //============================
@@ -178,6 +179,8 @@ HRESULT CEnemy::Init(const D3DXVECTOR3 pos, const D3DXVECTOR3 rot, int nNumParts
 	}
 
 	m_pStateLife = CState_Life::Create();
+
+	InitModel();
 
 	//タイプ設定
 	SetType(TYPE_ENEMY);
@@ -376,6 +379,11 @@ void CEnemy::Update(void)
 	if (m_pMotion->IsFinish())
 	{
 		m_pMotion->Set(MOTIONTYPE_NEUTRAL);
+	}
+
+	if (m_bDelete)
+	{
+		SetDeath(true);
 	}
 }
 
@@ -763,8 +771,7 @@ void CEnemy::Damage(float fDamege)
 
 	if (m_param.fLife <= 0.0f)
 	{
-		//死んだらどうしようか
-		CManager::GetInstance()->SetResult(CManager::RT_LOSE);
+		m_bDelete = true;
 	}
 
 	m_pStateLife->SetState(CState_Life::STATE_DAMAGE, DAMAGE_CT);
@@ -970,4 +977,31 @@ void CEnemy::Throw()
 	m_nThrowCtr = COOLTIME_THROW;
 
 	m_pMotion->Set(MOTIONTYPE_THROW);
+}
+
+//============================
+// モデル設定
+//============================
+void CEnemy::InitModel()
+{
+	//モデルの生成(全パーツ分)
+	for (int nCntCrt = 0; nCntCrt < m_nNumModel; nCntCrt++)
+	{
+		if (m_apPart[nCntCrt] == nullptr)
+		{
+			continue;
+		}
+
+		std::string file = CManager::GetInstance()->GetXModel()->GetFilename(m_apPart[nCntCrt]->GetIdxModel());
+		if (strstr(const_cast<char*>(file.c_str()), "head") == nullptr)
+		{
+			m_apPart[nCntCrt]->SetTexPass("data\\TEXTURE\\BOT\\bot_body_use.png", 0);	//テクスチャ差し替え
+		}
+		else
+		{
+			m_apPart[nCntCrt]->SetTexPass("data\\TEXTURE\\BOT\\bot_face_use.png", 0);	//テクスチャ差し替え
+		}
+
+		m_apPart[nCntCrt]->SetIdxParent(0);	//テクスチャ差し替え番号
+	}
 }

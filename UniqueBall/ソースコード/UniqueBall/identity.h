@@ -24,7 +24,7 @@ namespace my_Identity
 		MEMBER_MAX
 	};
 
-	const float THROW_SPEED = 100.0f;		//ボールを投げる時の付与スピード
+	const float THROW_SPEED = 30.0f;		//ボールを投げる時の付与スピード
 	const float THROW_PARABOLA = -0.02f;		//ボールを投げる時の角度(放物線もどき)
 }
 

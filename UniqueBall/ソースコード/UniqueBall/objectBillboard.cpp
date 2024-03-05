@@ -29,9 +29,10 @@ CObjectBillboard::CObjectBillboard(int nPriority) : CObject(nPriority)
 	m_mtxWorld = {};								//ワールドマトリックス
 	m_pTexture = nullptr;							//テクスチャへのポインタ
 	m_pVtxBuff = nullptr;							//頂点バッファへのポインタ
-	m_pos = D3DXVECTOR3(0.0f, 0.0f, 0.0f);			//位置
-	m_move = D3DXVECTOR3(0.0f, 0.0f, 0.0f);			//位置
-	m_size = D3DXVECTOR3(0.0f, 0.0f, 0.0f);			//大きさ
+	m_pos = mylib_const::DEFVEC3;			//位置
+	m_rot = mylib_const::DEFVEC3;			//向き
+	m_move = mylib_const::DEFVEC3;			//移動
+	m_size = mylib_const::DEFVEC3;			//大きさ
 	m_nIdxTexture = -1;
 	m_bZtest = false;
 	m_bAtest = false;
@@ -238,6 +239,10 @@ void CObjectBillboard::Draw(void)
 	D3DXMatrixTranslation(&mtxTrans, m_pos.x, m_pos.y, m_pos.z);
 	D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxTrans);
 
+	////向きを反映
+	//D3DXMatrixRotationYawPitchRoll(&mtxRot, m_rot.y, m_rot.x, m_rot.z);
+	//D3DXMatrixMultiply(&m_mtxWorld, &m_mtxWorld, &mtxRot);
+
 	//ワールドマトリックスの設定
 	pDevice->SetTransform(D3DTS_WORLD, &m_mtxWorld);
 
@@ -365,6 +370,28 @@ CObjectBillboard * CObjectBillboard::Create(const D3DXVECTOR3 pos, const D3DXVEC
 void CObjectBillboard::SetPos(const D3DXVECTOR3 pos)
 { 
 	m_pos = pos; 
+}
+
+//============================
+// 位置設定
+//============================
+void CObjectBillboard::SetRot(const D3DXVECTOR3 rot)
+{
+	m_rot = rot;
+
+	VERTEX_3D *pVtx;		//頂点情報のポインタ
+
+	//頂点バッファをロックし、頂点情報へのポインタを取得
+	m_pVtxBuff->Lock(0, 0, (void**)&pVtx, 0);
+
+	//頂点座標の設定
+	pVtx[0].pos = D3DXVECTOR3(-m_rot.x, m_rot.y, 0.0f);		//(x,y,z)
+	pVtx[1].pos = D3DXVECTOR3(m_rot.x, m_rot.y, 0.0f);
+	pVtx[2].pos = D3DXVECTOR3(-m_rot.x, -m_rot.y, 0.0f);
+	pVtx[3].pos = D3DXVECTOR3(m_rot.x, -m_rot.y, 0.0f);
+
+	//頂点バッファをアンロックする
+	m_pVtxBuff->Unlock();
 }
 
 //============================
@@ -550,6 +577,11 @@ void CObjectBillboardAnim::Update(void)
 
 	//頂点バッファをアンロックする
 	pVtxBuff->Unlock();
+
+	if (m_anim->IsEnd())
+	{
+		SetDeath(true);
+	}
 }
 
 //============================

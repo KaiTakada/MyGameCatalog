@@ -28,6 +28,15 @@ CParts::CParts(int nPriority) : CObject(nPriority)
 	m_pParent = nullptr;		//親モデルへのポインタ
 	m_nIdxModel = 0;
 	m_bMultiply = false;
+	
+	for (int i = 0; i < my_parts::NUM_TEX_PASS; i++)
+	{
+		m_sTexPass[i] = "";
+		m_pTexture[i] = nullptr;
+	}
+
+	m_nIdxParent = -1;
+
 	ZeroMemory(&m_mat.MatD3D, sizeof(D3DMATERIAL9));
 }
 
@@ -68,6 +77,15 @@ HRESULT CParts::Init(D3DXVECTOR3 pos, D3DXVECTOR3 rot)
 void CParts::Uninit(void)
 {
 	m_pParent = nullptr;
+
+	for (int nCntTex = 0; nCntTex < my_parts::NUM_TEX_PASS; nCntTex++)
+	{
+		if (m_pTexture[nCntTex] != nullptr)
+		{
+			m_pTexture[nCntTex]->Release();
+			m_pTexture[nCntTex] = nullptr;
+		}
+	}
 
 	Release();
 }
@@ -152,7 +170,14 @@ void CParts::Draw(void)
 		}
 		
 		//テクスチャの設定
-		pDevice->SetTexture(0, pModel->pTexture[nCntMat]);
+		if (m_sTexPass[m_nIdxParent] != "" && m_nIdxParent != -1)
+		{//差し替え
+			pDevice->SetTexture(0, m_pTexture[m_nIdxParent]);
+		}
+		else
+		{
+			pDevice->SetTexture(0, pModel->pTexture[nCntMat]);
+		}
 
 		//モデル(パーツ)の描画
 		pModel->pMesh->DrawSubset(nCntMat);
@@ -214,6 +239,20 @@ D3DXVECTOR3 CParts::GetOutcomePos(CParts * pParts)
 	}
 
 	return answer;
+}
+
+//=================================
+// 差し替えテクスチャ設定
+//=================================
+void CParts::SetTexPass(std::string sTexPass, int nIdx)
+{
+	LPDIRECT3DDEVICE9 pDevice = CManager::GetInstance()->GetRenderer()->GetDevice();
+	m_sTexPass[nIdx] = sTexPass;
+
+	D3DXCreateTextureFromFile(
+		pDevice,
+		const_cast<char*>(sTexPass.c_str()),
+		&m_pTexture[nIdx]);
 }
 
 //=================================

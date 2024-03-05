@@ -97,9 +97,12 @@ public:
 	void SetMember(const my_Identity::eMember member) { m_eMember = member; }		//所属設定
 	my_Identity::eMember GetMember() { return m_eMember; }		//所属設定
 
+	void SetDelete(const bool bDelete) { m_bDelete = bDelete; }		//org死亡フラグ設定
+	bool GetDelete(void) { return m_bDelete; }					//org死亡フラグ取得
 
 	void ReadFile(void);	//ファイル読込
 	void Damage(float fDamege = 1.0f);
+	void InitModel();	//モデル初期化
 
 	CMotion *GetMotion(void);					//現在パラメータ取得
 
@@ -132,6 +135,7 @@ private:
 	my_Identity::eMember m_eMember;		//所属
 	int m_nCatchCtr;		//キャッチカウンター
 	int m_nThrowCtr;		//投げカウンター
+	bool m_bDelete;		//死んだらSceneで殺す用フラグ[t:死んだ]
 };
 
 #endif

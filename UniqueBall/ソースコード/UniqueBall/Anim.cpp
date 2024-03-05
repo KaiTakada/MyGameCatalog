@@ -35,6 +35,7 @@ CAnim::CAnim()
 	m_nNumPtnAnimY = 0;						//アニメーションパターン数y
 	m_nFrame = 0;		//更新頻度フレーム
 	m_nLoop = 0;		//ループ数(-1で無限)
+	m_bEnd = false;
 
 	for (int nCntTex = 0; nCntTex < MAX_VTX; nCntTex++)
 	{
@@ -102,6 +103,10 @@ void CAnim::Update(void)
 			{//1ループ
 				m_nPtnAnimY = 0;
 
+				if (m_nLoop == 0)
+				{
+					m_bEnd = true;
+				}
 				m_nLoop--;
 			}
 

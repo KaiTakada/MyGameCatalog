@@ -91,7 +91,7 @@ void CMap::Uninit(void)
 {
 	if (m_pBlock != nullptr)
 	{
-		m_pBlock->Uninit();
+		m_pBlock->SetDeath(true);
 		m_pBlock = nullptr;
 	}
 }

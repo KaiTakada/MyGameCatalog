@@ -10,7 +10,6 @@
 //=========================
 #include "renderer.h"
 #include "object.h"
-#include <time.h>
 #include "debugproc.h"
 #include "game.h"
 #include "camera_game.h"

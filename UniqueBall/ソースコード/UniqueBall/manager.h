@@ -63,7 +63,6 @@ public:
 		MODE_TUTORIAL,
 		MODE_GAME,
 		MODE_RESULT,
-		MODE_RANKING,
 		MODE_MAX
 	};
 
@@ -200,14 +199,19 @@ public:
 
 	void SetGrow(bool bGrow) { m_bGrow = bGrow; }						//進化シーン状態設定
 	bool GetGrow(void) { return m_bGrow; }								//進化シーン状態取得
-	void InvGrow(void) { m_bGrow = m_bGrow ? false : true; }				//進化シーン切り替え
+	void InvGrow(void) { m_bGrow = m_bGrow ? false : true; }			//進化シーン切り替え
 
 	void SetEdit(bool bEdit) { m_bEdit = bEdit; }						//進化シーン状態設定
 	bool GetEdit(void) { return m_bEdit; }								//進化シーン状態取得
-	void InvEdit(void) { m_bEdit = m_bEdit ? false : true; }				//進化シーン切り替え
+	void InvEdit(void) { m_bEdit = m_bEdit ? false : true; }			//進化シーン切り替え
 
 	void SetResult(RESULT_TYPE result) { m_result = result; }			//勝敗状態設定
-	RESULT_TYPE GetResult(void) { return m_result; }						//勝敗状態取得
+	RESULT_TYPE GetResult(void) { return m_result; }					//勝敗状態取得
+	
+	void SetRank(int nRank,int nIdx) { m_anRank[nIdx] = nRank; }			//順位設定
+	int GetRank(int nIdx) { return m_anRank[nIdx]; }						//順位取得(1つ)
+	int *GetRank() { return m_anRank; }									//順位取得
+	void ZeroRank();									//順位取得
 
 protected:
 
@@ -230,7 +234,8 @@ private:
 	bool m_bGrow;				//進化シーンフラグ(※ゲームシーンで使用※Renderer干渉)
 	bool m_bEdit;				//エディットフラグ(※ゲームシーンで使用※Renderer干渉)
 	RESULT_TYPE m_result;		//勝敗フラグ(※ゲーム→リザルトシーンで使用)
-	
+	int m_anRank[mylib_const::MAX_PLAYER];	//順位保存(値はプレイヤー番号、順位は箱番号
+
 	static CManager *m_pManager;		//インスタンス保持
 };
 

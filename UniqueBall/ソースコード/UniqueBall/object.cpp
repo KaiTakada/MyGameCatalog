@@ -53,55 +53,6 @@ CObject::~CObject()
 
 }
 
-////============================
-//// オブジェクトの破棄
-////============================
-//void CObject::Release(void)
-//{
-//	int nPrity = m_nPriority;
-//	CObject *pNext = m_pNext;		//次の
-//	CObject *pPrev = m_pPrev;		//前の
-//
-//	if (m_apTop != nullptr)
-//	{
-//		if (m_apTop == this)
-//		{//先頭とthisが一緒であれば
-//			m_apTop = pNext;
-//		}
-//	}
-//
-//	if (m_apEnd != nullptr)
-//	{
-//		if (m_apEnd == this)
-//		{//最後尾とthisが一緒であれば
-//			m_apEnd = m_pPrev;
-//		}
-//	}
-//
-//	if (pPrev != nullptr)
-//	{
-//		if (pNext == nullptr)
-//		{
-//			pPrev->m_pNext = nullptr;
-//		}
-//		else
-//		{
-//			pPrev->m_pNext = pNext;
-//		}
-//	}
-//
-//	if (pNext != nullptr)
-//	{
-//		pNext->m_pPrev = m_pPrev;
-//	}
-//
-//	delete this;
-//	//this = nullptr;
-//
-//	//総数ダウン
-//	m_nNumAll--;
-//}
-
 //============================
 // オブジェクトの破棄
 //============================
@@ -184,9 +135,9 @@ void CObject::ReleaseAll(void)
 			if (pObject->m_bDeath == true)
 			{
 				pObject->Uninit();
-
-				pObject = pObjectNext;
 			}
+		
+			pObject = pObjectNext;
 		}
 
 		pObject = m_apTop[nCnt];

@@ -8,7 +8,6 @@
 #include "camera.h"
 #include "input.h"
 #include "player.h"
-#include "debugproc.h"
 #include "game.h"
 #include "map.h"
 #include "cursor.h"
@@ -93,15 +92,6 @@ void CCamera::Uninit()
 void CCamera::Update()
 {
 	PlayerStalk();
-
-	//デバッグ
-	CDebugProc *pDebug = CManager::GetInstance()->GetDebugProc();
-	pDebug->Print("--- カメラ情報 ---\n");
-	pDebug->Print("現在の方向:%f\n", m_rot.y);
-	pDebug->Print("目標の方向:%f\n", m_rotDest.y);
-	pDebug->Print("注視点:%f %f %f\n", m_posR.x, m_posR.y, m_posR.z);
-	pDebug->Print("視点:%f %f %f\n", m_posV.x, m_posV.y, m_posV.z);
-	pDebug->Print("カメラのアングル：%f \n", m_fAngle);
 }
 
 //============================
@@ -263,7 +253,7 @@ void CCamera::RotHorPosR()
 	CInputGamepad *pInputGamepad = CManager::GetInstance()->GetInputGamepad();
 
 	//ブーストorジャンプ
-	if (pInputGamepad->GetPadTrigger(CInputGamepad::BUTTON_A, 0))
+	if (pInputGamepad->GetTrigger(CInputGamepad::BUTTON_A, 0))
 	{
 	}
 
@@ -295,7 +285,7 @@ void CCamera::RotVerPosR()
 	CInputGamepad *pInputGamepad = CManager::GetInstance()->GetInputGamepad();
 
 	//ブーストorジャンプ
-	if (pInputGamepad->GetPadTrigger(CInputGamepad::BUTTON_A, 0))
+	if (pInputGamepad->GetTrigger(CInputGamepad::BUTTON_A, 0))
 	{
 	}
 

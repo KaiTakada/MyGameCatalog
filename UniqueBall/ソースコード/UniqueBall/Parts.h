@@ -16,8 +16,10 @@
 //================================
 // マクロ定義
 //================================
-#define DEF_VERTEX3D D3DXVECTOR3(0.0f,0.0f,0.0f)				//デフォルトサイズ
-#define MAX_XMODEL (128)				//モデルの受け皿容量
+namespace my_parts
+{
+	const int NUM_TEX_PASS = 4;		//差し替えテクスチャ数
+}
 
 //================================
 // モデルクラス
@@ -43,10 +45,12 @@ public:
 	void Update(void);							//更新
 	void Draw(void);							//描画
 
-	static CParts *Create(const char *pFilename, const D3DXVECTOR3 pos = D3DXVECTOR3(0.0f, 0.0f, 0.0f), const D3DXVECTOR3 rot = D3DXVECTOR3(0.0f, 0.0f, 0.0f));		//生成
+	static CParts *Create(const char *pFilename, const D3DXVECTOR3 pos = mylib_const::DEFVEC3, const D3DXVECTOR3 rot = mylib_const::DEFVEC3);		//生成
 	void SetParent(CParts *pParts);
 	void SetPos(const D3DXVECTOR3 pos) { m_pos = pos; }						//現在位置設定
 	void SetRot(const D3DXVECTOR3 rot) { m_rot = rot; }						//現在向き設定
+	void SetScale(const float fScale) { m_scale = D3DXVECTOR3(fScale, fScale, fScale); }						//サイズ設定
+	D3DXVECTOR3 GetScale() { return m_scale; }						//サイズ取得
 	void SetMultiply(const bool bMultipy) { m_bMultiply = bMultipy; }		//掛け合わせフラグ設定
 	D3DXVECTOR3 GetPos(void) { return m_pos; }				//現在位置取得
 	D3DXVECTOR3 GetRot(void) { return m_rot; }				//現在向き取得
@@ -58,6 +62,10 @@ public:
 	D3DXVECTOR3 GetOutcomePos(CParts *pParts);				//合計座標
 	CParts *GetParent() { return m_pParent; }				//親モデルポインタ取得
 	void SetMat(D3DXMATERIAL mat) { m_mat = mat; }			//色設定
+	std::string *GetTexPass() { return m_sTexPass; }				//差し替えテクスチャ取得
+	void SetTexPass(std::string sTexPass, int nIdx);			//差し替えテクスチャ設定
+	int GetIdxParent() { return m_nIdxParent; }				//差し替え番号取得
+	void SetIdxParent(int nIdx) { m_nIdxParent = nIdx; }			//差し替え番号設定
 
 protected:
 
@@ -70,6 +78,9 @@ private:
 	int m_nIdxModel;			//モデル番号
 	D3DXMATERIAL m_mat;			//指定色
 	bool m_bMultiply;		//親or最新と掛け合わせるフラグ(false:合わせる)
+	int m_nIdxParent;		//親が番号持ちだったら
+	std::string m_sTexPass[my_parts::NUM_TEX_PASS];		//差し替えテクスチャ
+	LPDIRECT3DTEXTURE9 m_pTexture[my_parts::NUM_TEX_PASS];		//差し替えテクスチャ
 };
 
 #endif

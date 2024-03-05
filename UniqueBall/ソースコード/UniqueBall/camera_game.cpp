@@ -8,6 +8,7 @@
 #include "camera_game.h"
 #include "player.h"
 #include "input.h"
+#include "debugproc.h"
 
 //============================
 // 定数定義
@@ -16,7 +17,8 @@ namespace
 {
 	const DWORD HEIGHT = static_cast<DWORD>(SCREEN_HEIGHT * 0.5f);
 	const DWORD WIDTH = static_cast<DWORD>(SCREEN_WIDTH * 0.5f);
-	const float CAMERA_LIMIT_Z(D3DX_PI * 0.48f);	//z軸回転の限界値
+	//const float CAMERA_LIMIT_Z(D3DX_PI * 0.48f);	//z軸回転の限界値
+	const float CAMERA_LIMIT_Z(D3DX_PI * 0.25f);	//z軸回転の限界値
 }
 
 //============================
@@ -68,6 +70,8 @@ void CCameraGame::Uninit()
 void CCameraGame::Update()
 {
 	PlayerStalk();
+
+	Debug();
 }
 
 //============================
@@ -97,10 +101,10 @@ void CCameraGame::SetCamera()
 
 	//プロジェクションマトリックスの作成[透視投影]
 	D3DXMatrixPerspectiveFovLH(&mtxProjection,
-								D3DXToRadian(45.0f),
-								(float)SCREEN_WIDTH / (float)SCREEN_HEIGHT,
-								10.0f,
-								40000.0f);
+								D3DXToRadian(45.0f),	//視野
+								(float)m_viewport.Width / (float)m_viewport.Height,	//縦横比
+								10.0f,	//最小距離
+								40000.0f);	//最大距離
 
 	//プロジェクションマトリックスの設定
 	pDevice->SetTransform(D3DTS_PROJECTION,&mtxProjection);
@@ -128,6 +132,9 @@ void CCameraGame::SetCamera()
 //============================
 void CCameraGame::SetViewPos()
 {
+	m_viewport.Height = static_cast<DWORD>(SCREEN_HEIGHT / 1.0f);
+	m_viewport.Width = static_cast<DWORD>(SCREEN_WIDTH / 2);
+
 	if (m_nIdx == 0)
 	{
 		m_viewport.X = 0;
@@ -136,7 +143,8 @@ void CCameraGame::SetViewPos()
 	else
 	{
 		m_viewport.X = static_cast<DWORD>(SCREEN_WIDTH / 2);
-		m_viewport.Y = static_cast<DWORD>(SCREEN_HEIGHT / 2);
+		m_viewport.Y = 0;
+		//m_viewport.Y = static_cast<DWORD>(SCREEN_HEIGHT / 2);
 	}
 }
 
@@ -169,36 +177,22 @@ void CCameraGame::PlayerStalk(void)
 	posR.x = pos.x;
 	posR.z = pos.z;
 	posR.y = pos.y;
-	//m_posR.x = pos.x + (sinf(m_rot.y) * m_fDis);
-	//m_posR.z = pos.z + (cosf(m_rot.y) * m_fDis);
-	//m_posR.y = pos.y;
 
 	//視点
-	posV.x = posR.x + (sinf(rot.y) * fDis);
-	posV.y = posR.y + (sinf(fAngle) * fDis);
-	posV.z = posR.z + (cosf(rot.y) * fDis);
+	posV.x = posR.x + sinf(rot.y + D3DX_PI) * cosf(rot.z) * -fDis;
+	posV.y = posR.y + sinf(rot.z) * -fDis;
+	posV.z = posR.z + cosf(rot.y + D3DX_PI) * cosf(rot.z) * -fDis;
 
+	//カメラ
 	RotControll();
-
-	////注視点水平旋回
-	//RotHorPosR();
-
-	////注視点垂直旋回
-	//RotVerPosR();
-
-	////補正
-	//ReviseRot();
 
 	SetPosR(posR);
 	SetPosV(posV);
-	SetRotDest(rotDest);
-
-	//プレイヤーに向きを反映
-	pPlayer->SetRot(rotDest);
+	pPlayer->SetRot(D3DXVECTOR3(rot.x, rot.y,0.0f));
 }
 
 //===========================
-//マウスで向きを調整
+//PADで向きを調整
 //===========================
 void CCameraGame::RotControll()
 {
@@ -232,4 +226,15 @@ void CCameraGame::RotControll()
 	}
 
 	SetRot(rot);
+}
+
+//===========================
+// デバッグ
+//===========================
+void CCameraGame::Debug()
+{
+	//デバッグ
+	CDebugProc *pDebug = CManager::GetInstance()->GetDebugProc();
+	pDebug->Print("--- カメラ情報 ---\n");
+	pDebug->Print("現在の方向:%f %f %f\n", GetRot().x, GetRot().y, GetRot().z);
 }

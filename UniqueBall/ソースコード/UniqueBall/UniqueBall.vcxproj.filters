@@ -165,9 +165,6 @@
     <ClCompile Include="tutorial.cpp">
       <Filter>scene</Filter>
     </ClCompile>
-    <ClCompile Include="ranking.cpp">
-      <Filter>scene</Filter>
-    </ClCompile>
     <ClCompile Include="wp_ball.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
@@ -181,6 +178,15 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
     <ClCompile Include="wall.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="ui_life.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="ui_result.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="move2D.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
@@ -335,9 +341,6 @@
     <ClInclude Include="result.h">
       <Filter>scene</Filter>
     </ClInclude>
-    <ClInclude Include="ranking.h">
-      <Filter>scene</Filter>
-    </ClInclude>
     <ClInclude Include="constant.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
@@ -351,6 +354,15 @@
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="wall.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="ui_life.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="ui_result.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="move2D.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
   </ItemGroup>

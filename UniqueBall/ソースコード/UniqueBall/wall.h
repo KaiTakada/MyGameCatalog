@@ -36,7 +36,7 @@ public:
 	static CWall *Create(void);		//生成
 	static CWall *Create(const D3DXVECTOR3 pos, const D3DXVECTOR3 rot = DEF_VERTEX3D, const D3DXVECTOR3 size = mylib_const::DEF_FIELD_SIZE);		//生成
 
-	float CWall::CollisionChara(D3DXVECTOR3 posObj);		//キャラクターが壁にめり込まないよう補正する
+	bool CollisionChara(D3DXVECTOR3 posObj, D3DXVECTOR3 posOldObj, D3DXVECTOR3 *posCross);		//キャラクターが壁にめり込まないよう補正する
 
 private:
 

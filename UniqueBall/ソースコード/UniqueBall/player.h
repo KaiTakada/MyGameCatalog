@@ -28,7 +28,8 @@ class CMotion;
 class CBall;
 class CGauge;
 class CState_Life;
-class CObject2D;
+class CUI_Life;
+class CObjectBillboard;
 
 //=========================
 // プレイヤークラス
@@ -90,6 +91,7 @@ public:
 	D3DXVECTOR3 GetMove(void) { return m_move; }				//移動量取得
 	void SetPos(const D3DXVECTOR3 pos) { m_pos = pos; }		//現在位置設定
 	D3DXVECTOR3 GetPos(void) { return m_pos; }				//現在位置取得
+	D3DXVECTOR3 GetPosCol(void) { return D3DXVECTOR3(m_pos.x, m_pos.y + m_fHeart, m_pos.z); }				//現在位置取得
 	void SetRot(const D3DXVECTOR3 rot) { m_rot = rot; }		//向き設定
 	D3DXVECTOR3 GetRot(void) { return m_rot; }				//向き取得
 	void SetHeartPos(const float fHeart) { m_fHeart = fHeart; }		//心臓位置設定
@@ -99,10 +101,18 @@ public:
 	void SetMember(const my_Identity::eMember member) { m_eMember = member; }		//所属設定
 	my_Identity::eMember GetMember() { return m_eMember; }							//所属設定
 	void SetIdx(int nIdx) { m_nIdx = nIdx; }		//番号設定
-	int SetIdx(void) { return m_nIdx; }				//番号取得
+	int GetIdx(void) { return m_nIdx; }				//番号取得
+	void SetUI_Life(CUI_Life* pLifeUI) { m_pLifeUI = pLifeUI; }		//体力UI設定
+	CUI_Life *GetUI_Life(void) { return m_pLifeUI; }				//体力UI取得
+	
+	void SetDelete(const bool bDelete) { m_bDelete = bDelete; }		//org死亡フラグ設定
+	bool GetDelete(void) { return m_bDelete; }					//org死亡フラグ取得
 
 	void ReadFile(void);	//ファイル読込
+	void InitUI();	//UI初期化
+	void InitModel();	//モデル初期化
 	void Damage(int nDamege = 1);
+	void Knockback(float fRot);
 
 protected:
 
@@ -118,11 +128,14 @@ private:
 
 	void DebugKey(CInputKeyboard *pInputKeyboard);		//デバッグキー
 	void CollisionField(D3DXVECTOR3 pos);
-	void CollisionWall(D3DXVECTOR3 pos);
+	void CollisionWall();
 	void CollisionBall(D3DXVECTOR3 pos);
 	void TackleCollision();
+	void MotionEffect();
+	void ReduceCounter();
 
 	void Throw();	//ボール投げ
+	void Target();	//ターゲティング
 
 	CParts *m_apPart[MAX_PARTS];		//モデル(パーツ)へのポインタ
 	int m_nNumModel;							//モデル(パーツ)の総数
@@ -138,14 +151,17 @@ private:
 	CMotion *m_pMotion;		//モーション情報
 	Param m_param;			//パラメータ
 	CBall *m_pBall;		//武器(ボール)情報
-	CObject2D *m_pLifeUI;		//体力UI
+	CUI_Life *m_pLifeUI;		//体力UI
 	CState_Life *m_pStateLife;		//状態
 	my_Identity::eMember m_eMember;		//所属
 	int m_nCatchCtr;		//キャッチカウンター
 	int m_nTackleCtr;		//タックルカウンター
+	float m_fThrowChargeCtr;		//溜め投げカウンター
 	int m_nJump2Ctr;		//2段ジャンプカウンター
-	int m_nThrowChargeCtr;		//投げチャージカウンター
 	int m_nIdx;		//自身の番号
+	bool m_bDelete;		//死んだらSceneで殺す用フラグ[t:死んだ]
+	bool m_bTarget;		//ターゲットフラグ[t:死んだ]
+	CObjectBillboard *m_pTargetMark;		//ターゲットマーク
 };
 
 #endif

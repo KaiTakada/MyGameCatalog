@@ -10,7 +10,7 @@
 //============================
 // マクロ定義
 //============================
-#define MAX_LIGHT (3)
+const int MAX_LIGHT = 3;
 
 //============================
 // ライトクラス
@@ -27,6 +27,7 @@ public:
 
 private:
 	D3DLIGHT9 m_light[MAX_LIGHT];		//ライトの情報
+	int m_nDebugNum;	//デバッグ対象
 };
 
 #endif

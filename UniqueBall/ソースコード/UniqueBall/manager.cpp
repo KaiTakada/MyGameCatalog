@@ -40,7 +40,6 @@
 #include "tutorial.h"
 #include "game.h"
 #include "result.h"
-#include "ranking.h"
 
 //#include "renderer.h"
 
@@ -51,7 +50,6 @@ namespace
 {
 	CScene::MODE MODE_DEBUG = CScene::MODE_GAME;//デバッグ時のスタートシーン
 }
-
 
 //=========================
 // 前方宣言
@@ -109,6 +107,11 @@ CManager::CManager()
 	m_bGrow = false;			//進化シーンフラグ
 	m_bEdit = false;			//エディットシーンフラグ
 	m_result = RT_NONE;			//勝敗内容
+
+	for (int i = 0; i < mylib_const::MAX_PLAYER; i++)
+	{
+		m_anRank[i] = -1;
+	}
 
 	m_pManager = this;
 }
@@ -524,6 +527,11 @@ void CManager::Update(void)
 	{
 		m_pCamera->Update();
 	}
+	if (m_pLight != nullptr)
+	{
+		m_pLight->Update();
+	}
+
 	if (m_pDebugProc != nullptr)
 	{//デバッグ破棄
 		m_pDebugProc->Update();
@@ -540,7 +548,6 @@ void CManager::Draw(void)
 	{
 		m_pRenderer->Draw();
 	}
-
 }
 
 //======================================================
@@ -606,18 +613,20 @@ void CScene::Update()
 	}
 
 	////無限フェード(メモリデバッグ用)
-	//int nMode = GetMode();
+	//int nMode = static_cast<int>(GetMode());
 	//nMode += 1;
+	//nMode %= static_cast<int>(CScene::MODE_MAX);
 	//
-	//if (nMode < CScene::MODE_TITLE || nMode > CScene::MODE_RANKING)
+	//if (nMode >= static_cast<int>(CScene::MODE_TITLE) && nMode < static_cast<int>(CScene::MODE_MAX))
 	//{
-	//	//デバッグ必要、ゴミが入ってる。
-	//	nMode = GetMode();
+	//	m_pFade->SetState(CScene::MODE(nMode));
 	//}
-	//
-	//nMode %= CScene::MODE_MAX;
-	//m_pFade->SetState(CScene::MODE(nMode));
+	//else
+	//{
+	//	static_assert(true, "モード壊れ");
+	//}
 
+#if _DEBUG
 	if (pKeyboard->GetTrigger(DIK_ADD))
 	{
 		//新しいモードの生成
@@ -626,6 +635,13 @@ void CScene::Update()
 
 		m_pFade->SetState(CScene::MODE(nMode));
 	}
+
+	CDebugProc *pDebug = CManager::GetInstance()->GetDebugProc();
+	pDebug->Print("#------------------------\n");
+	pDebug->Print("#モード\n");
+	pDebug->Print("#現在のモード:%d\n", static_cast<int>(m_mode));
+	pDebug->Print("#------------------------\n");
+#endif
 }
 
 //============================
@@ -662,10 +678,6 @@ CScene * CScene::Create(MODE mode)
 
 	case CScene::MODE_RESULT:
 		pScene = new CResult;
-		break;
-
-	case CScene::MODE_RANKING:
-		pScene = new CRanking;
 		break;
 
 	default:
@@ -722,17 +734,6 @@ void CManager::SetMode(const CScene::MODE mode)
 	m_bPause = false;		//ポーズフラグ
 	m_bGrow = false;		//進化シーンフラグ
 
-	if (mode != CScene::MODE_RANKING)
-	{
-		m_result = RT_NONE;
-	}
-
-	if (mode < CScene::MODE_TITLE || mode > CScene::MODE_RANKING)
-	{
-		m_result = RT_NONE;
-		assert(true);
-	}
-
 	//新しいモードの生成
 	m_pScene = CScene::Create(mode);
 }
@@ -760,5 +761,13 @@ void CManager::Release()
 		m_pManager->Uninit();
 		delete m_pManager;
 		m_pManager = nullptr;
+	}
+}
+
+void CManager::ZeroRank()
+{
+	for (int i = 0; i < mylib_const::MAX_PLAYER; i++)
+	{
+		m_anRank[i] = -1;
 	}
 }

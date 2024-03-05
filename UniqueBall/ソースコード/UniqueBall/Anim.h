@@ -41,7 +41,8 @@ public:
 	int GetNumLoop(void) { return m_nLoop; }			//パターン数取得
 	int GetNumFrame(void) { return m_nFrame; }			//フレーム数取得
 	D3DXVECTOR2 *GetTexpos(void) { return &m_aTexpos[0]; }		//テクスチャ座標取得
-
+	bool IsEnd() { return m_bEnd; }			//終了判定取得
+	
 protected:
 
 private:
@@ -52,6 +53,7 @@ private:
 	int m_nNumPtnAnimY;						//アニメーションパターン数y
 	int m_nFrame;		//更新頻度フレーム
 	int m_nLoop;		//ループ数(-1で無限)
+	bool m_bEnd;			//終了フラグ
 
 	D3DXVECTOR2 m_aTexpos[MAX_VTX];
 };
